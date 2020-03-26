@@ -58,7 +58,17 @@ tmp$Weekrate <- tmp$Confirmed / tmp$Lag7
 
 tmp <- tmp[as.character(tmp$Date) %in% as.character(Sys.Date()-c(1,8)),]
 
-plot_ly(tmp[!is.na(tmp$Day100) & tmp$Country!="China",], x=~Confirmed, y=~Weekrate, color=~paste(Province, Country), type="scatter", mode="lines+markers") %>%
+co <- c("Finland", "Sweden","France","Germany","US","Spain","Italy","UK","South Korea",
+        "Switzerland","Diamond Princess", "Iran","Singapore","Taiwan", "Norway",
+        "Denmark","Iraq","Ireland")
+
+plot_ly(tmp[!is.na(tmp$Day100) & tmp$Country %in% co,], x=~Confirmed, y=~Weekrate, color=~paste(Province, Country), type="scatter", mode="lines+markers") %>%
+  layout(xaxis=list(type="log", title="Confirmed cases (cumulative)"),
+         yaxis=list(title="Multiplication of confirmed cases during the previous week")
+         ) %>%
+  add_segments(x=1, xend=70000, y=1.8, yend=1.8, name="Sustainable", color="red")
+
+plot_ly(tmp[!is.na(tmp$Day100) & tmp$Country !="China",], x=~Confirmed, y=~Weekrate, color=~paste(Province, Country), type="scatter", mode="lines+markers") %>%
   layout(xaxis=list(type="log", title="Confirmed cases (cumulative)"),
          yaxis=list(title="Multiplication of confirmed cases during the previous week")
          ) %>%

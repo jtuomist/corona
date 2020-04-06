@@ -33,6 +33,8 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook about coronavirus
 ```{r mortality_timeline, echo=FALSE, message=FALSE, warning=FALSE}
 library(reshape2)
 library(plotly)
+library(magrittr)
+library(tidyverse)
 
 lag <- 0 * 24*3600 # Lag structure not needed. Daily numbers work just fine even if the death toll depends on previous, not current, cases.
 

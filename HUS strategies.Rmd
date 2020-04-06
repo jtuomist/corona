@@ -179,6 +179,12 @@ if(TRUE) { # If TRUE, use preprocessed data.
   library(openxlsx)
   library(gsheet)
   
+  reina <- read.csv("~/Downloads/reina_default.csv")
+  reina$date <- as.Date(reina$date)
+
+  ### ADD MELT HERE TO PRODUCE VARIABLE COLUMN
+  ### SAVE THE FILE TO GITHUB
+  
   out <- data.frame()
   for(i in (1:nrow(scen))[scen$Use]) {
     if(i == 99) out$in_icu <- NA # The file format changed on 31.3.2020
@@ -284,7 +290,7 @@ ggplot(tmp, aes(x=date, y=value, colour=variable, linetype=Testing))+geom_line()
   )+
   thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
 
-# Figure 7 agent-based and Epidemic Calculator comparison
+# NOT USED IN THIS MANUSCRIPT! agent-based and Epidemic Calculator comparison
 
 tmp <- epicalc[epicalc$initial_seed==1200 , c("Restriction","recovered","dead")]
 tmp <- melt(tmp, id.vars="Restriction")
@@ -330,6 +336,39 @@ ggplot(out[!is.na(out$Infectivity) & out$date=="2020-09-27" &out$variable %in% n
   )+
   thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
 
+
+################# FIGURE 
+
+tmp <- rbind(
+  cbind(
+    Parameter = "lower",
+    aggregate(reina[c("infected","dead","hospitalized")], by = reina[c("date","scenario")], FUN=function(x) quantile(x, 0.025))
+  ),
+  cbind(
+    Parameter = "upper",
+    aggregate(reina[c("infected","dead","hospitalized")], by = reina[c("date","scenario")], FUN=function(x) quantile(x, 0.975))
+  ),
+  cbind(
+    Parameter = "mean",
+    aggregate(reina[c("infected","dead","hospitalized")], by = reina[c("date","scenario")], FUN=mean)
+  )
+)
+
+tmp <- melt(tmp, id.vars = c("Parameter","date","scenario"))
+tmp$value <- pmax(1, tmp$value)
+
+tmp <- reshape(tmp, timevar = "Parameter", v.names = "value", idvar=c("date","scenario","variable"), direction="wide")
+
+ggplot(tmp, aes(x=date, colour = variable, fill=variable, y=value.mean, ymin=value.lower, ymax=value.upper))+geom_ribbon(colour="white",alpha=0.1)+geom_line()+
+  scale_y_log10()+
+  thlTheme(show.grid.x =TRUE, legend.position = "bottom")+
+  labs(
+    title = "Default scenario",
+    y = "Number of cases (mean, 95 % CI)"
+  )
+  
+
+ggplot(reina, aes(x=date, y=infected))+geom_line()+geom_smooth()
 
 
 

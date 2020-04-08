@@ -134,7 +134,7 @@ When you save the notebook, an HTML file containing the code and output will be 
 
 The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
 
-```{r}
+```{r preprocess, echo=FALSE}
 
 ### TODO
 ## FIGURE 6 myös active testing skenaarioitava 0.35 osalta
@@ -147,7 +147,7 @@ library(scales)
 
 Sys.setlocale("LC_TIME", "C")
 
-scen <- read.csv("coronameta_2020-03-29.csv")
+scen <- read.csv("coronameta_2020-04-07.csv")
 
 colour12 <- c(
   "#a6cee3",
@@ -169,42 +169,67 @@ linecolour <- colour12[5]
 if(TRUE) { # If TRUE, use preprocessed data.
   # Download preprocessed simulation output data.
   
-  out <- read.csv("agent_simulation_model_scenario_outputs.csv")
+  unzip("reina_scenarios_csv.zip")
+  reina <- read.csv("reina_scenarios.csv")
+  file.remove("reina_scenarios.csv") # Only keep the zipped version in archive
+  
+  unzip("reina_parameter_runs_csv.zip")
+  out <- read.csv("reina_parameter_runs.csv")
+  file.remove("reina_parameter_runs.csv")
 
   epicalc <- read.csv("epidemic_calculator_scenario_outputs.csv")
   
 } else {
   # Create simulation output data from original files downloaded from model.
   
-  library(openxlsx)
   library(gsheet)
   
-  reina <- read.csv("~/Downloads/reina_default.csv")
-  reina$date <- as.Date(reina$date)
+  reina <- rbind(
+    read.csv("~/Downloads/reina-runs/reina_default.csv"),
+    read.csv("~/Downloads/reina-runs/reina_hammer-and-dance.csv"),
+    read.csv("~/Downloads/reina-runs/reina_looser-restrictions-to-start-with.csv"),
+    read.csv("~/Downloads/reina-runs/reina_mitigation.csv"),
+    read.csv("~/Downloads/reina-runs/reina_summer-boogie.csv")
+  )
 
-  ### ADD MELT HERE TO PRODUCE VARIABLE COLUMN
-  ### SAVE THE FILE TO GITHUB
+  #levels(reina$scenario)
+  #[1] "default"                           "hammer-and-dance"                 
+  #[3] "looser-restrictions-to-start-with" "mitigation"                       
+  #[5] "summer-boogie"                    
+
+  levels(reina$scenario) <- c(
+    "current restrictions",
+    "suppression",
+    "Swedish path",
+    "mitigation",
+    "summer boogie"
+  )
+  
+  # Save output results of the five preselected scenarios.
+  
+  write.csv(reina, "reina_scenarios.csv")
+  zip("reina_scenarios_csv.zip", "reina_scenarios.csv")
+  file.remove("reina_scenarios.csv")
+  
+  if(TRUE) {
+  nam <- paste(scen$X, scen$Restriction, scen$Testing, scen$Asymptomatic, scen$Infectivity, sep="-")
+  nam[grepl("^\\d-",nam)] <- paste0("0", nam[grepl("^\\d-",nam)])
   
   out <- data.frame()
-  for(i in (1:nrow(scen))[scen$Use]) {
-    if(i == 99) out$in_icu <- NA # The file format changed on 31.3.2020
+  for(i in 1:length(nam)) {
     out <- rbind(out, merge(
-      read.xlsx(paste0("~/Downloads/Data(", i, ").xlsx")),
-      scen[i , ! colnames(scen) %in% c("Use","Description")]
+      read.csv(paste0("~/Downloads/", nam[i], ".csv")),
+      scen[i , ! colnames(scen) %in% c("X","Use","Description")]
     ))
     cat(i," ")
   }
+  colnames(out)[colnames(out)=="X"] <- "date"
 
-  out <- melt(out, id.vars = c("date","Restriction","Testing","Asymptomatic","Infectivity"))
-  
-  # If cells are empty, they contain the default values. These are
-  ## Restriction: 0.35
-  ## Testing: Lazy
-  ## Asymptomatic: 0.5
-  ## Infectivity: 0.25
-  
-  write.csv(out, "agent_simulation_model_scenario_outputs.csv")
-  
+  write.csv(out, "reina_parameter_runs.csv")
+  zip("reina_parameter_runs_csv.zip",
+      "reina_parameter_runs.csv")
+  file.remove("reina_parameter_runs.csv")
+  }
   ### Download the Epidemic Calculator simulation data
   
   epicalc <- gsheet2tbl("https://docs.google.com/spreadsheets/d/1k99lsiDR1OnUq5Va7_dOVIM_GFYS4c7ReVNkPL2Vxc8/edit#gid=946848081")
@@ -214,25 +239,38 @@ if(TRUE) { # If TRUE, use preprocessed data.
 
 }
 
+reina$date <- as.Date(reina$date)
+reina <- melt(reina, id.vars = c("date","run","scenario"))
+
 out$date <- as.Date(out$date)
+out <- melt(out, id.vars = c("date","Restriction","Testing","Asymptomatic","Infectivity"))
 out$Testing <- factor(out$Testing, levels=c("Lazy","Active","Aggressive"))
 out$variable <- factor(out$variable, levels = c(
-  "recovered","infected", "susceptible", "all_detected", "dead", "hospitalized","in_icu",
-  "exposed_per_day","hospital beds","icu_units","positive_tests_per_day",
-  "cfr","ifr","r","X"
+  "recovered","all_infected","infected", "susceptible", "all_detected", "dead", "hospitalized","in_icu",
+  "exposed_per_day","available_hospital_beds","available_icu_units","total_icu_units","tests_run_per_day",
+  "cfr","ifr","r","X","mobility_limitation","us_per_infected"
 ))
-out$Strategy <- ifelse(out$Restriction==0.35,
+out$Strategy <- ifelse(out$Restriction==0.41,
                        ifelse(out$Testing=="Lazy","Mitigation",
                        ifelse(out$Testing=="Aggressive","Suppression","Other")),
                        "Other")
 out$Strategy <- factor(out$Strategy, levels=c("Mitigation","Suppression","Other"))
 
-nums = c("all_detected","dead","recovered")
+nums = c("dead","recovered")
+
+```
+
+```{r figures}
+
+## Generic testing protocol to remove sensitivity analyses from data and set date for examination
+
+tst0 <- out$Asymptomatic==0.5 & out$Infectivity==0.28 & out$value > 1 #  & !is.na(out$Restriction)
+
+target <- as.Date("2020-04-06")+180
 
 ###### FIGURE 4
 
-tst0 <- is.na(out$Asymptomatic) & is.na(out$Infectivity) & !is.na(out$Restriction) & out$value > 1 # Remove sensitivity analyses
-tst <- tst0 & out$Testing=="Lazy" & out$variable=="infected" # Mitigation strategy, infected only
+tst <- tst0 & out$Testing=="Lazy" & out$variable=="infected" & out$Restriction!=0.41 # Mitigation strategy, infected only
 
 ggplot(out[tst,], 
        aes(x=date, y=value, colour=as.character(Restriction)))+geom_line()+
@@ -246,25 +284,22 @@ ggplot(out[tst,],
 
 ### FIGURE 5
 
-#> as.Date("2020-03-31")+180
-#[1] "2020-09-27"
-
-tmp <- out[tst0 & out$date=="2020-09-27" & out$Restriction %in% c(0.1,0.8) & out$variable=="recovered",]
+tmp <- out[tst0 & out$date==target & out$Restriction %in% c(0.1,0.8) & out$variable=="recovered",]
 tmp$value <- tmp$value/1645000
 tmp
 
-out[tst0 & out$date=="2020-09-27" & out$Restriction %in% c(0,0.1,0.35,0.8) & out$variable %in% c("recovered","dead"),]
+out[tst0 & out$date==target & out$Restriction %in% c(0,0.1,0.35,0.8) & out$variable %in% nums,]
 
-ggplot(out[tst0 & out$date=="2020-09-27" & out$variable %in% nums ,],
+ggplot(out[tst0 & out$date==target & out$variable %in% nums ,],
        aes(x=Restriction,y=value, colour=variable, linetype=Testing))+geom_line()+
   scale_y_log10(labels=comma)+
   labs(
-    title="COVID-19 scenarios: mobility restrictions and testing",
+    title="COVID-19 scenarios: restrictions and testing",
     x="Mobility restrictions (reduction from normal)",
     y="Cumulative number of patients after 180 days"
   )+
-  geom_vline(xintercept = 0.35, colour=linecolour)+
-  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
+#  geom_vline(xintercept = 0.35, colour=linecolour)+
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="right")
 
 ## ADDITIONAL GRAPH (NOT USED IN THE MANUSCRIPT)
 
@@ -276,9 +311,7 @@ ggplot(out[tst0 & out$Testing=="Lazy" & out$variable=="dead",],
 
 ### FIGURE 6. 
 
-## CORRECT TO 0.35
-
-tmp <- out[tst0 & out$Restriction==0.3 & out$variable %in% c("dead","infected"), ]
+tmp <- out[tst0 & out$Restriction==0.41 & out$variable %in% c("dead","infected"), ]
 aggregate(tmp$value, by=tmp[c("Restriction","variable", "Testing")],FUN=max)           
 
 ggplot(tmp, aes(x=date, y=value, colour=variable, linetype=Testing))+geom_line()+
@@ -297,8 +330,8 @@ tmp <- melt(tmp, id.vars="Restriction")
 
 tmp <- rbind(
   cbind(tmp, Model="Epidemic Calculator"),
-  cbind(out[tst0 & out$date=="2020-09-27" & out$Testing=="Lazy" & out$variable %in% 
-            c("recovered","dead") , c("Restriction","variable","value")],
+  cbind(out[tst0 & out$date==target & out$Testing=="Lazy" & out$variable %in% 
+            nums , c("Restriction","variable","value")],
         Model="Agent-based"
   )
 )
@@ -312,64 +345,89 @@ ggplot(tmp, aes(x=Restriction, y=value, colour=variable, linetype=Model))+geom_l
   )+
   thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
 
-#### Figure 8.
+### FIGUREs 7 and 8 are from the official scenario code below
 
-ggplot(out[!is.na(out$Asymptomatic) & out$date=="2020-09-27" &out$variable %in% nums,],aes(x= Asymptomatic, y=value, colour=variable, linetype=Strategy))+geom_line()+
+#### Figure 9.
+
+ggplot(out[out$Restriction==0.41 & out$Infectivity==0.28 & out$Testing!="Active" & out$date==target &out$variable %in% nums,],
+       aes(x= Asymptomatic, y=value, colour=variable, linetype=Testing))+geom_line()+
   geom_vline(xintercept=0.5, colour=linecolour)+
   scale_y_log10(labels=comma)+
   labs(
-    title="Sensitivity analysis: aymptomatic patients",
+    title="Sensitivity analysis: asymptomatic patients",
     y="Cumulative number of cases after 180 days",
-    x="Fraction of amymptomatic cases among all diseased"
+    x="Fraction of asymptomatic cases among all diseased"
   )+
-  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="right")
 
-#### FIGURE 9
+#### FIGURE 10
 
-ggplot(out[!is.na(out$Infectivity) & out$date=="2020-09-27" &out$variable %in% nums,],aes(x= Infectivity, y=value, colour=variable, linetype=Strategy))+geom_line()+
-  geom_vline(xintercept=0.25, colour=linecolour)+
+ggplot(out[out$Restriction==0.41 & out$Asymptomatic==0.5 & out$Testing!="Active" & out$date==target &out$variable %in% nums,],
+       aes(x= Infectivity, y=value, colour=variable, linetype=Testing))+geom_line()+
+  geom_vline(xintercept=0.28, colour=linecolour)+
   scale_y_log10(labels=comma)+
   labs(
     title="Sensitivity analysis: Infectivity",
     y="Cumulative number of cases after 180 days",
     x="Probability of infection given virus contact"
   )+
-  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="right")
 
 
-################# FIGURE 
+################# FIGURES FOR THE OFFICIAL SCENARIOS
 
+tmp <- reina[reina$variable %in% c("infected","dead","hospitalized"),]
 tmp <- rbind(
   cbind(
     Parameter = "lower",
-    aggregate(reina[c("infected","dead","hospitalized")], by = reina[c("date","scenario")], FUN=function(x) quantile(x, 0.025))
+    aggregate(tmp[c("value")], by = tmp[c("date","scenario","variable")], FUN=function(x) quantile(x, 0.025))
   ),
   cbind(
     Parameter = "upper",
-    aggregate(reina[c("infected","dead","hospitalized")], by = reina[c("date","scenario")], FUN=function(x) quantile(x, 0.975))
+        aggregate(tmp[c("value")], by = tmp[c("date","scenario","variable")], FUN=function(x) quantile(x, 0.975))
   ),
   cbind(
     Parameter = "mean",
-    aggregate(reina[c("infected","dead","hospitalized")], by = reina[c("date","scenario")], FUN=mean)
+        aggregate(tmp[c("value")], by = tmp[c("date","scenario","variable")], FUN=mean)
   )
 )
 
-tmp <- melt(tmp, id.vars = c("Parameter","date","scenario"))
 tmp$value <- pmax(1, tmp$value)
 
 tmp <- reshape(tmp, timevar = "Parameter", v.names = "value", idvar=c("date","scenario","variable"), direction="wide")
 
-ggplot(tmp, aes(x=date, colour = variable, fill=variable, y=value.mean, ymin=value.lower, ymax=value.upper))+geom_ribbon(colour="white",alpha=0.1)+geom_line()+
-  scale_y_log10()+
+rdi <- data.frame(
+  Scenario = c(
+    "default", # current restrictions
+    "hammer-and-dance", # hybrid (suppression)
+    "looser-restrictions-to-start-with", # Swedish path
+    "mitigation", # mitigation
+    "summer-boogie" # 
+  ),
+  label = c(
+    "current restrictions",
+    "suppression",
+    "Swedish path",
+    "mitigation",
+    "summer boogie"
+  ),
+  RDI = c(166, 72, 83, 111, 110),
+  x=as.Date("2020-03-01"),
+  y=20000
+)
+
+for(i in unique(tmp$scenario)) {
+print(ggplot(data=tmp[tmp$scenario==i,], aes(x=date, colour = variable, fill=variable, y=value.mean, ymin=value.lower, ymax=value.upper))+geom_ribbon(colour="white",alpha=0.1)+geom_line()+
+  scale_y_log10(labels=comma)+
+  #  geom_text(data=rdi[rdi$Scenario==i,], aes(x=x, y=y, label=paste("RDI:",RDI)))+
   thlTheme(show.grid.x =TRUE, legend.position = "bottom")+
+  coord_cartesian(ylim=c(9,100000))+
   labs(
-    title = "Default scenario",
+    title = paste("Scenario", rdi$label[rdi$Scenario==i], "with randomness"),
+    subtitle=paste("Restriction day index:", rdi$RDI[rdi$Scenario==i]),
     y = "Number of cases (mean, 95 % CI)"
-  )
-  
-
-ggplot(reina, aes(x=date, y=infected))+geom_line()+geom_smooth()
-
+  ))
+}
 
 
 ```

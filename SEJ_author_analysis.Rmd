@@ -1,0 +1,55 @@
+---
+title: "Structured expert judgement of COVID-19"
+author: "Jouni Tuomisto"
+date: "4/23/2020"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r preprocess}
+
+library(jsonlite)
+
+dat <- fromJSON("https://connect.medrxiv.org/relate/collection_json.php?grp=181")[[3]] # All COVID-19 papers from MedRxiv and BioRxiv.
+
+rels <- data.frame()
+for(i in 1:nrow(dat)) {
+  tmp <- dat$rel_authors[[i]]
+  tmp <- merge(tmp, dat[i, colnames(dat) != "rel_authors"])
+  rels <- rbind(rels, tmp)
+}
+rels$author_inst_short <- substr(rels$author_inst,1,45)
+
+```
+
+```{r analysis}
+
+cat("MedRxiv and BioRxiv contain", nrow(dat), "articles and those have", length(unique(rels$author_name)), "distinct authors (", mean(dat$rel_num_authors), "on average).\n")
+
+auth <- aggregate(rels$author_name, by = rels[c("author_name","author_inst_short")], FUN=length)
+
+cat("Frequencies of authors by number of publications in MedRxiv or BioRxiv\n")
+table(auth$x)
+
+#auth <- merge(auth[auth$x>4 , ], rels)
+auth[order(-auth$x),c(3,1,2)][1:100,]
+
+inst <- rels[!duplicated(rels[c("rel_doi","author_inst_short")]) , ]
+inst <- aggregate(inst$author_inst_short, by=inst["author_inst_short"], FUN=length)
+
+cat("Frequencies of institutes by number of publications in MedRxiv or BioRxiv\n")
+table(inst$x)
+
+#inst <- merge(inst[inst$x>10 , ], rels)
+inst[order(-inst$x),c(2,1)][1:50,]
+
+```
+

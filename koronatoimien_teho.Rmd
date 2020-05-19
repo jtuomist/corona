@@ -1,0 +1,102 @@
+---
+title: "Koronatoimien teho"
+author: "Jouni Tuomisto"
+date: "5/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+tartuttavia <- 20000 # ihmistä Suomessa
+todetut <- 6300 # ihmistä Suomessa
+eristyskustannus <- 200 # €/d
+eristyskesto <- 20 # d
+vakimaara <- 5500000 # ihmistä Suomessa
+vakimaara_helsinki <- 1600000 # ihmistä HUS-alueella
+
+```
+
+## Koronaepidemiaa hidastavien toimenpiteiden tarkastelu
+
+### Koronaepidemian on tieto-ongelma
+
+Koronaepidemia on perimmältään tieto-ongelma. Epidemia on helposti pysäytettävissä hyvin yksinkertaisella keinolla: jokainen tartunnan saanut eristetään muista, kunnes hän ei enää eritä virusta, eli noin kolme viikkoa. Tämän jälkeen virusta ei enää ole.
+
+Tässä kirjoituksessa yritetään arvioida koronan tartuttavuutta, erilaisten toimenpiteiden tehokkuutta taudin hidastamisessa ja kustannuksia. Kaikki arviot ovat ylimalkaisia, mutta suuruusluokka on yritetty saada oikeaksi.
+
+Suomessa koronapotilaita on ollut tiedossa 6000 arviolta yhteensä 20000 henkilöä. Tämänhetkinen tartuttavien määrä ei ole tiedossa, mutta se ei ole ainakaan suurempi, koska osa on ehtinyt parantua, joten oletetaan `r tartuttavia` tartuttavaa. Yhden tartuttavan eristämisen kustannus `r eristyskustannus` €/d ja sen kesto on `r eristyskesto` päivää. Näillä luvuilla ja täydellisellä tiedolla tauti hävitetään Suomesta `r tartuttavia * eristyskustannus * eristyskesto` eurolla, mikä on yhteiskunnallisesti katsottuna ilmaista.
+
+Ongelma on se, että me emme tiedä, keitä ne tartuttavat ihmiset ovat. Tämä tietopuute tulee todella kalliiksi. Tässä tarkastelussa oletetaan, että meillä on käytössä kansainvälisesti tuotettu tieto taudin tartuntamekanismeista, tarttumisherkkyydestä ja hoitotarpeesta.
+
+Heikoin väestötason tieto olisi se, että emme tietäisi yhtään kenellä tauti on, vaan kaikki olisivat yhtä todennäköisiä emmekä edes tietäisi mikä sairastumisen todennäköisyys on. Tällä tiedolla tauti voitaisiin pysäyttää eristämällä koko väestö, mutta se maksaisi `r vakimaara * eristyskustannus * eristyskesto` euroa ja pilaisi Suomen talouden. Siitä saadaan kuitenkin pysäyttämispolitiikan hinnan teoreettinen yläraja. 
+
+Onneksi kuitenkin suunnilleen tiedämme kokonaismäärän ja tartuttavien keskittymisen Helsingin seudulle. Jos Helsingin alueella kaikki eristettäisiin, lasku olisi silti `r vakimaara_helsinki * eristyskustannus * eristyskesto` euroa, mutta tauti pysähtyisi vain Uudellamaalla ja saattaisi lähteä uudestaan leviämään jostain muualta.
+
+Jos sairastuneista pidetään huolellisesti kirjaa (mikä on niin halpaa, ettei sen kustannuksia tässä lasketa), voidaan eristäminen kohdistaa tartuttaviksi todettuihin, ja se on jo varsin halpaa: `r todetut * eristyskustannus * eristyskesto` euroa. Tällä tavalla tartuttavista ihmisistä saadaan kuitenkin selville vain pienehkö osa, koska osa tartuttavista on oireettomia, ja epidemia jatkaa kasvuaan.
+
+Millä keinoilla voisimme päästä nykytilanteesta parempaan tietoon? Helsingin alueella on `r vakimaara_helsinki` asukasta, ja vain `r tartuttavia / vakimaara_helsinki * 100` prosentilla on ollut tauti.
+
+Kontaktien määrä ihmisellä on Suomessa n 10 päivässä, mutta se vaihtelee paljon iästä ja muista tekijöistä riippuen. Haarukoidaan kuitenkin karkeasti keskimääräistä tilannetta.
+
+Ehkä puolet on sellaisia, jotka on tavannut myös edellisenä päivänä. Uusien tuttavuuksien määrä siis vähenee, ja 25 päivä aikana on tavannut 20 eri ihmistä. Koska Suomessa tartuttavuusluku on n 2, tartunnan todennäköisyys keskimääräisessä kohtaamisessa on 10%.
+
+Tarkastellaan kahta ihmistä, joista toisen on satunnainen koronaviruksen kantaja ja toinen on tällaisen ihmisen satunnainen kontakti. Miten tartunta näiden välillä on estettävissä ja mitä meidän on tiedettävä pystyäksemme estämään sen?
+
+Tartuttaja
+Pysyy poissa tartuttamasta. Tämä on kaikkein tehokkain mutta edellyttää että tietää tartuttavansa. Puolet on oireettomia ja puolet tartunnoista tapahtuu ennen oireiden alkua. Eli vain neljännes tartunnoista voidaan estää tartuttajan oiretiedon perusteella.
+
+Lisäksi tämä edellyttää, että tartuttajan on mahdollista eristäytyä. Monet räjähdysmäiset leviämiset tapahtuivat paikoissa joissa ihmiset eivät voineet jäädä pois töistä vaikka sairastuivat. Suomessa onneksi on hyvä tilanne tässä asiassa.
+
+Tartuttaja voi myös vähentää tartuntoja vaikka ei tiedä tartuttavansa. Näitä käytetään yleisesti ja voi ajatella että ne ovat riittävän vaivattomia kaikkien käyttöön.
+
+Yskii hihaan. Vähentää puolet yskösten viruksista mutta ei vaikuta puhuessa tai laulaessa pidarointiin. Vaikutus 5%.
+
+Käyttää maskia. Omatekoisen maskin teho 50% mutta vain siellä missä käytetään. Joukkoliikenne, julkiset tilat. Ehkä kymmenesosa kohtaamisista eli kokonaisvaikutus 5%.
+
+Pesee kädet eikä koskettele pintoja. Pinnat eivät ehkä ratkaisevan tärkeitä. Vaikutus 5%.
+
+Karkeasti tartuttaja voi vähentää 40% nykytiedon valossa, mutta pitää olla motivoitunut noudattamaan ohjeita jatkuvasti. Näillä tartuttavuusluku laskee kahdesta 1.2:een.
+
+Tartunnan saavan toimet parantavat tilannetta myös.
+
+Tehokasta on vähentää riskiryhmien altistumista.
+Hoitohenkilökunta voi suojautua hoitaessaan koronapotilaita. Teho 95 % mutta suurin osa koronapotilaista pysyy kotona ja henkilökuntakontaktit ovat vain 15% heidän koktakteistaan. Kokonaisvaikutus siis 14%.
+
+Eristys kotona. Jos joku tiedetään tartuttajaksi, on erittäin tärkeää estää tartunnat muihin perheenjäseniin. Kiinassa tämä tartuntatapa selitti 80 % tartunnoista karanteenin aikana(?). Siksi ensimmäisenä mainittu 25 % toimii vain jos kotitartunnat estetään. Tämän keinon 100 % teho on itse asiassa jo oletettu laskelmiin, ja realistisesti kolmannes tartuttajan normaalikontakteista on kotona ja eristämisteho on ehkä vain 50 % joten tämän huomioiminen aiheuttaa 17 % huononnuksen tilanteeseen.
+
+Muut keinot eivät ole täsmätoimia, koska tartuttajaa ei tiedetä. Niitä ei voi kohdentaa vaan koko väestöä on pidettävä potentiaalisina tartuttajina.
+
+Pesee kädet. Teho 5 %
+
+Ei koske kasvoja tai kaiva nenää. Teho 5 %.
+
+Välttää ihmiskontakteja. Tämä on erittäin monimuotoinen toimenpide ja jotkin asiat ovat hyvin halpoja tai jopa suotuisia, esimerkiksi jos meneekin baarin sijasta lenkille luontoon jolloin sekä henkinen että fyysinen suorituskyky paranevat. Mutta välttämisen lisääntyessä myös haitat lisääntyvät. Oletetaan 10 % teho ilman merkittäviä haittoja esim etätyön muodossa.
+
+Vanhusten eristäminen toki vähentää terveyshaittoja tehokkaammin kuin lieviä oireita saavien koululaisten. Mutta epidemian leviämisen kannalta vanhukset eivät ole niin tärkeitä, koska heillä on luonnostaan vähemmän kontakteja. Siksi voisi ajatella, että vanhusten lisäeristäminen ei ole kovin tehokasta. Poislukien hoitolaitokset, joissa korotetty hygieniataso suojaa niin henkilökuntaa kuin vanhuksia. Tehoa vaikea arvioida.
+
+Tapaamiset ulkona. Pienhiukkasaltistumisen saantiosuus on tyypillisesti kymmenesosa ulkolähilähteille kuten liikenteelle verrattuna sisälähteisiin kuten kynttilöihin. Niinpä voidaan olettaa 90 % teho kohtaamisille jotka järjestetäänkin ulkona. Tällaisia kohtaamisia on kuitenkin melko vähän, ehkä 10 %. Teho siis 9 %.
+
+Välttää riskipaikkoja kuten ravintoloita ja yleisötapahtumia. Yhteiskunnallisesti ja kulttuurisesti kallis toimenpide, teho kuitenkin hyvä näille kohtaamisille. Teho ehkä 5 % koska kontakteja ei kovin paljon.
+
+Yllä olevat toimet siis on toteutettavissa nykytiedolla. Yhteisteho on x %.
+
+Seuraavat toimet vaativat lisätiedon hankkimista.
+
+Saa oireita ja menee testiin. Tämä auttaa tartuttajia välttämään kontakteja kun epävarmuus oireiden syystä poistuu. Teho eristäytymiseen paranee ehkä 20 %.
+
+Lisäksi voidaan ottaa käyttöön karanteenihotellit jossa sairaat siirretään pois kotoa tartuttamasta. Leviäminen pysähtyy hyvin mutta ongelmana kustannukset ja epävarmaa kuinka monelle soveltuu.
+
+Tärkeämpää on kuitenkin testauksen jälkeinen eristys, koska silloin päästään kiinni siihen 75 prosenttiin jotka ovat (vielä) oireettomia tartuttajia.
+
+Sitten kysymys kuuluu: miten saadaan kiinni ne joilla ei ole oireita eli noin puolet sairastuneista ja pari ensimmäistä päivää? Se on luultavasti yli kaksi kolmannesta tartunnoista.
+
+Siihen tarvitaan testausta ja jäljitystä. Mutta kuinka tehokasta se on? 
+
+Tartuttajalla on keskimäärin 20 kontaktia ja sanotaan 10 muuta ihmistä joita hän pitää kontaktina vaikkei fyysistä kontaktia oikeasti ollut. Lisäksi olennaista on, kuinka monta kontaktia kantaja osaa nimetä ja miten nopeasti tieto saadaan.
+
+Käytetään Reina-mallin profiilia tartuttamisajankohdasta. Se vaihtelee -2 - 10 päivään oireiden alusta. Kontaktit listataan kahden viikon taakse.
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

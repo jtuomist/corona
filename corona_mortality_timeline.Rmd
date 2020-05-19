@@ -62,19 +62,21 @@ tmp <- tmp[as.character(tmp$Date) %in% as.character(Sys.Date()-c(1,8)),]
 
 co <- c("Finland", "Sweden","France","Germany","US","Spain","Italy","UK","South Korea",
         "Switzerland","Diamond Princess", "Iran","Singapore","Taiwan", "Norway",
-        "Denmark","Iraq","Ireland")
+        "Denmark","Iraq","Ireland","US")
+
+healing_rate <- 1/(20/21)^7 # rate of COVID-19 patients getting well
 
 plot_ly(tmp[!is.na(tmp$Day100) & tmp$Country %in% co,], x=~Confirmed, y=~Weekrate, color=~paste(Province, Country), type="scatter", mode="lines+markers") %>%
   layout(xaxis=list(type="log", title="Confirmed cases (cumulative)"),
          yaxis=list(title="Multiplication of confirmed cases during the previous week")
          ) %>%
-  add_segments(x=1, xend=70000, y=1.8, yend=1.8, name="Sustainable", color="red")
+  add_segments(x=1, xend=70000, y=healing_rate, yend=healing_rate, name="Sustainable", color="red")
 
 plot_ly(tmp[!is.na(tmp$Day100) & tmp$Country !="China",], x=~Confirmed, y=~Weekrate, color=~paste(Province, Country), type="scatter", mode="lines+markers") %>%
   layout(xaxis=list(type="log", title="Confirmed cases (cumulative)"),
          yaxis=list(title="Multiplication of confirmed cases during the previous week")
          ) %>%
-  add_segments(x=1, xend=70000, y=1.8, yend=1.8, name="Sustainable", color="red")
+  add_segments(x=1, xend=70000, y=healing_rate, yend=healing_rate, name="Sustainable", color="red")
 
 deaths <- melt(deaths, id.vars = 1:4, variable.name="Date", value.name = "Deaths")
 deaths$Date <- as.POSIXct(deaths$Date, format="X%m.%d.%y") - lag
@@ -83,7 +85,7 @@ colnames(deaths)[1:2] <- c("Province","Country")
 mortality <- merge(confirmed, deaths[-(3:4)]) # Don't use Lat and Long in merge
 mortality <- mortality[mortality$Confirmed>300 & !is.na(mortality$Confirmed) |
                          mortality$Country=="Finland" & mortality$Confirmed>10,  ] # Small numbers are too unreliable to be useful in mortality calculations
-mortality$Mortality <- mortality$Deaths / mortality$Confirmed
+mortality$CFR <- mortality$Deaths / mortality$Confirmed
 
 confirmed <- confirmed[order(confirmed$Country, confirmed$Day100) , ]
 
@@ -93,16 +95,16 @@ plot_ly(confirmed[!is.na(confirmed$Day100) & confirmed$Country!="China",], x=~Da
 plot_ly(mortality[!is.na(mortality$Day100) & mortality$Country!="China",], x=~Day100, y=~Deaths, color=~paste(Province, Country), type="scatter", mode="lines") %>%
   layout(yaxis=list(type="log"))
 
-plot_ly(mortality[mortality$Country!="China",], x=~Day100, y=~Mortality, color=~paste(Province, Country),
+plot_ly(mortality[mortality$Country!="China",], x=~Day100, y=~CFR, color=~paste(Province, Country),
         type="scatter", mode="lines") %>%
-  layout(title="COVID-19 mortality in countries with >300 cases excluding China",
+  layout(title="COVID-19 CFR in countries with >300 cases excluding China",
          xaxis=list(title="Days since the onset of epidemic"))
 
-plot_ly(mortality[mortality$Country=="China",], x=~Day100, y=~Mortality, color=~paste(Province, Country), type="scatter", mode="lines") %>%
-  layout(title="COVID-19 mortality in provinces with >300 cases in China",
+plot_ly(mortality[mortality$Country=="China",], x=~Day100, y=~CFR, color=~paste(Province, Country), type="scatter", mode="lines") %>%
+  layout(title="COVID-19 CFR in provinces with >300 cases in China",
          xaxis=list(title="Days since the onset of epidemic"))
 
-# Breakingpoint: The date when the mortality ratio (cumulative deaths per cumulative confirmed cases starts to rise (above typical 2 %)
+# Breakingpoint: The date when the CFR (case fatality rate; cumulative deaths per cumulative confirmed cases starts to rise (above typical 2 %)
 
 breakingpoint <- data.frame(
   Country.Region = c("Italy","Iran","Spain","United Kingdom","Netherlands"),
@@ -110,7 +112,7 @@ breakingpoint <- data.frame(
 )
 breakingpoint <- merge(breakingpoint, mortality)
 
-# It seems that mortality starts to rise when there are ca 50 corona deaths (200 in Iran) or ca 2000 confirmed cases (6500 in Iran)
+# It seems that CFR starts to rise when there are ca 50 corona deaths (200 in Iran) or ca 2000 confirmed cases (6500 in Iran)
 
 ```
 

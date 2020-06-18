@@ -127,6 +127,32 @@ confirmed_us <- melt(confirmed_us[-(1:5)], id.vars = 1:6, variable.name="Date", 
 confirmed_us$Date <- as.Date(confirmed_us$Date, format="X%m.%d.%y")
 colnames(confirmed_us)[1:3] <- c("County","State","Country")
 
+################################3333
+
+#day100 <- confirmed[confirmed$Confirmed>=100 & !is.na(confirmed$Confirmed),]
+#day100 <- aggregate(day100$Date, by = day100[c("Province","Country")], FUN=min)
+
+#confirmed_us <- merge(confirmed, day100, all.x=FALSE) # Drop data from countries with <100 cases
+#confirmed$Day100 <- as.numeric((confirmed$Date - confirmed$x) / 24 / 3600)
+
+tmp <- aggregate(confirmed_us["Confirmed"], by=confirmed_us[c("State","Country","Date")], FUN=function(x) sum(x, na.rm=TRUE))
+tmp <- merge(tmp, cbind(tmp[c("State", "Country")],
+                              Lag7 = tmp$Confirmed,
+                              Date = tmp$Date + 7),
+             all.x=TRUE)
+tmp$Weekrate <- tmp$Confirmed / tmp$Lag7
+
+tmp <- tmp[as.character(tmp$Date) %in% as.character(Sys.Date()-c(2,9)),]
+
+plot_ly(tmp, x=~Confirmed, y=~Weekrate, color=~paste(State, Country), type="scatter", mode="lines+markers") %>%
+  layout(xaxis=list(type="log", title="Confirmed cases (cumulative)"),
+         yaxis=list(title="Multiplication of confirmed cases during the previous week")
+         ) %>%
+  add_segments(x=1, xend=70000, y=healing_rate, yend=healing_rate, name="Sustainable", color="red")
+
+
+#########################################
+
 infective <- confirmed_us
 infective$Date <- infective$Date+1
 infective <- merge(confirmed_us, infective, by=c("County","State","Country","Date"))
@@ -149,11 +175,11 @@ plot_ly(
 plot_ly(
   aggregate(infective["Infective"], by=infective[c("Date","State")], FUN=function(x) sum(x, na.rm=TRUE)),
   x=~Date, y=~Infective, color=~State, type="scatter", mode="lines") %>%
-  layout(yaxis=list(title="Number of confirmed cases"))
+  layout(yaxis=list(title="Number of confirmed infective cases"))
 
 plot_ly(
   infective[infective$State=="New Hampshire" , ],
   x=~Date, y=~Infective, color=~County, type="scatter", mode="lines") %>%
-  layout(yaxis=list(title="Number of confirmed cases"))
+  layout(yaxis=list(title="Number of confirmed infective cases"))
 
 ```

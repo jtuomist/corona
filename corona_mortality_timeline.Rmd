@@ -209,14 +209,14 @@ plot_ly(
   layout(yaxis=list(type="log",title="Number of confirmed cases"))
 
 plot_ly(
-  aggregate(infective_us["Infective"], by=infective[c("Date","State")], FUN=function(x) sum(x, na.rm=TRUE)),
+  aggregate(infective_us["Infective"], by=infective_us[c("Date","State")], FUN=function(x) sum(x, na.rm=TRUE)),
   x=~Date, y=~Infective, color=~State, type="scatter", mode="lines") %>%
   layout(yaxis=list(title="Number of confirmed infective cases"))
 
 state <- "Oklahoma"
 
 plot_ly(
-  infective_us[infective$State==state, ],
+  infective_us[infective_us$State==state, ],
   x=~Date, y=~Infective, color=~County, type="scatter", mode="lines") %>%
   layout(yaxis=list(title=paste("Number of confirmed infective cases in", state)))
 

@@ -52,18 +52,18 @@ g <- list(
   visible = FALSE
 )
 
-<<<<<<< HEAD
+#<<<<<<< HEAD
 ### Kartta tartuttavista (eli viimeisten X päivän tapauksista)
 
 observation_window <- 14 
 
 tmp <- dat[dat$date>=max(dat$date)-observation_window,]
 tmp <- aggregate(tmp$new, by=tmp[c("area")], FUN=function(x) sum(x, na.rm=TRUE))
-=======
+#=======
 ### Kartta kaikista raportoiduista tapauksista
 if(FALSE) {
 tmp <- dat[dat$date==max(dat$date),]
->>>>>>> b4e35ca95f79ed74fb448ccd1682fc683b84c0d2
+#>>>>>>> b4e35ca95f79ed74fb448ccd1682fc683b84c0d2
 fig <- plot_ly() %>%
    add_trace(
     type="choropleth",

@@ -18,20 +18,24 @@ library(reshape2)
 
 ```{r data}
 
-df <- read.fwf("~/Downloads/Preliminary Assessment of Model State Forecasts of Deaths due to COVID19.dtt",
+#working_directory <- "~/Downloads/"
+working_directory <- "C:/_Eivarmisteta/"
+
+df <- read.fwf(paste0(working_directory, "Preliminary Assessment of Model State Forecasts of Deaths due to COVID19.dtt"),
                widths=c(5,9,6,15,4,15,15,15,15,15,225),stringsAsFactors=FALSE, skip=1)
 colnames(df) <- c("row","model","num","date","scale","Q5","Q25","Q50","Q75","Q95","name")
 for(i in c(2,4,5,11)) df[[i]] <- trimws(df[[i]])
 for(i in 6:10) df[[i]] <- ifelse(df[[i]]<0,NA,df[[i]])
 df$state <- substr(df$date,1,2)
 
-real <- read.fwf("~/Downloads/Preliminary Assessment of Model State Forecasts of Deaths due to COVID19.rls",
+real <- read.fwf(paste0(working_directory, "Preliminary Assessment of Model State Forecasts of Deaths due to COVID19.rls"),
                    widths=c(6,15,15,4,175),stringsAsFactors=FALSE, skip=0)
 colnames(real) <- c("row","date","rls","scale","name")
 for(i in c(2,4,5)) real[[i]] <- trimws(real[[i]])
 
 df <- merge(df, real[2:4])
 df$date <- gsub(" 7/4", " 7/04", df$date)
+df$date2 <- as.Date(paste0("2020-", gsub("/", "-", substr(df$date, 4, 10))))
 
 weights <- data.frame(
   model = c(
@@ -123,5 +127,23 @@ ggplot(df[!is.na(df$weight) & df$weight > 0.1,], aes(x=date, colour=state, group
   )
 
 ggsave("Best model calibration timeline w_ weights.png", height=8, width=14)  
+
+ggplot(df[df$state=="FL" & df$model %in%
+c("COVhub-e","CU","JHU","UA"),], aes(x=date2, colour=model, group=model,
+y=Q50))+geom_line()+
+   geom_point(aes(y=rls))+
+   geom_ribbon(aes(ymin=Q5, ymax=Q95), fill="grey50", alpha=0.2, size=0.2)+
+   facet_wrap(~model)+
+#   theme(axis.text.x = element_text(angle = 90, vjust=0.5))+
+  scale_x_date(date_labels = "%m/%d", breaks = as.Date("2020-06-20")+(0:5)*7)+
+   coord_cartesian(ylim=c(0,1500))+
+   labs(
+     title="Predicted COVID-19 cases by four models with medians and 90 % CI (lines) and actual realisations (dots) in Florida",
+     y="Number of COVID-19 cases per week",
+     x="Date"
+   )
+
+ggsave("Calibration timeline of selected models wo_ weights.png",
+height=6, width=10)
 
 ```

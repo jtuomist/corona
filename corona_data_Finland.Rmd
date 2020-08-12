@@ -9,6 +9,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 
 ```{r}
 library(OpasnetUtils)
+library(plotly)
 
 #Paketti datan editoimiseen ja visualisointiin
  library(tidyverse)
@@ -46,6 +47,34 @@ g <- list(
   visible = FALSE
 )
 
+### Kartta tartuttavista (eli viimeisten X päivän tapauksista)
+
+observation_window <- 14 
+
+tmp <- dat[dat$date>=max(dat$date)-observation_window,]
+tmp <- aggregate(tmp$new, by=tmp[c("area")], FUN=function(x) sum(x, na.rm=TRUE))
+fig <- plot_ly() %>%
+   add_trace(
+    type="choropleth",
+    geojson=geojson,
+    locations=tmp$area,
+    z=tmp$x,
+    zmin=0,
+    zmax=30,
+    colorscale="Viridis",
+    featureidkey="properties.Name"
+  ) %>%
+  layout(
+    geo = g
+  )
+fig
+
+pushIndicatorGraph(fig, 395)
+
+```
+
+```{r}
+
 ### Kartta kaikista raportoiduista tapauksista
 
 tmp <- dat[dat$date==max(dat$date),]
@@ -57,28 +86,6 @@ fig <- plot_ly() %>%
     z=tmp$cumulative,
     zmin=0,
     zmax=50,
-    colorscale="Viridis",
-    featureidkey="properties.Name"
-  ) %>%
-  layout(
-    geo = g
-  )
-fig
-
-pushIndicatorGraph(fig, 395)
-
-### Kartta tartuttavista (eli viimeisten 20 päivän tapauksista)
-
-tmp <- dat[dat$date>=max(dat$date)-20,]
-tmp <- aggregate(tmp$new, by=tmp[c("area")], FUN=function(x) sum(x, na.rm=TRUE))
-fig <- plot_ly() %>%
-   add_trace(
-    type="choropleth",
-    geojson=geojson,
-    locations=tmp$area,
-    z=tmp$x,
-    zmin=0,
-    zmax=30,
     colorscale="Viridis",
     featureidkey="properties.Name"
   ) %>%

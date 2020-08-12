@@ -1,6 +1,9 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
+  word_document: default
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
@@ -14,10 +17,11 @@ library(plotly)
 #Paketti datan editoimiseen ja visualisointiin
  library(tidyverse)
  
+if(FALSE){ 
 #Paketti datan lukemiseen
 library(jsonlite)
 library(rjson)
- 
+
 #Luetaan aineisto sisään
 aineisto <- fromJSON("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.json?row=dateweek2020010120201231-443686&column=hcdmunicipality2020-445222")
 
@@ -26,6 +30,7 @@ dat <- read.csv("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epi
 dat <- read.csv("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?row=dateweek2020010120201231-443686&row=hcdmunicipality2020-445131&column=measure-141082", sep=";")
 
 meta <- readLines("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.dimensions.json")
+} # ENDIF
 
 #Paketti datan lukemiseen
 library(jsonlite)
@@ -47,12 +52,18 @@ g <- list(
   visible = FALSE
 )
 
+<<<<<<< HEAD
 ### Kartta tartuttavista (eli viimeisten X päivän tapauksista)
 
 observation_window <- 14 
 
 tmp <- dat[dat$date>=max(dat$date)-observation_window,]
 tmp <- aggregate(tmp$new, by=tmp[c("area")], FUN=function(x) sum(x, na.rm=TRUE))
+=======
+### Kartta kaikista raportoiduista tapauksista
+if(FALSE) {
+tmp <- dat[dat$date==max(dat$date),]
+>>>>>>> b4e35ca95f79ed74fb448ccd1682fc683b84c0d2
 fig <- plot_ly() %>%
    add_trace(
     type="choropleth",
@@ -70,6 +81,7 @@ fig <- plot_ly() %>%
 fig
 
 pushIndicatorGraph(fig, 395)
+}
 
 ```
 
@@ -94,8 +106,15 @@ fig <- plot_ly() %>%
   )
 fig
 
+tmp <- tmp[order(-tmp$x),]
+
+cat("There are", sum(tmp$x), "infective corona cases in Finland right now.\n")
+
+tmp
+
 ############################################
 
+if(FALSE){
 url <- 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'
 counties <- rjson::fromJSON(file=url)
 url2<- "https://raw.githubusercontent.com/plotly/datasets/master/fips-unemp-16.csv"
@@ -210,6 +229,8 @@ unlist(aineisto$dataset$dimension$dateweek2020010120201231$category$label)
  
 #Yhdistetään muuhun aineistoon
  dataset <- kategoriat %>% left_join(data,by=c("index"="rowname"))
+ 
+}
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.

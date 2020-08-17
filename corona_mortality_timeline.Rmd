@@ -213,7 +213,7 @@ plot_ly(
   x=~Date, y=~Infective, color=~State, type="scatter", mode="lines") %>%
   layout(yaxis=list(title="Number of confirmed infective cases"))
 
-state <- "Oklahoma"
+state <- "New York"
 
 plot_ly(
   infective_us[infective_us$State==state, ],

@@ -18,18 +18,18 @@ library(plotly)
  library(tidyverse)
  
 if(FALSE){ 
-#Paketti datan lukemiseen
-library(jsonlite)
-library(rjson)
-
-#Luetaan aineisto sisään
-aineisto <- fromJSON("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.json?row=dateweek2020010120201231-443686&column=hcdmunicipality2020-445222")
-
-dat <- read.csv("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?row=dateweek2020010120201231-443686&row=hcdmunicipality2020-445222&column=measure-141082", sep=";")
-
-dat <- read.csv("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?row=dateweek2020010120201231-443686&row=hcdmunicipality2020-445131&column=measure-141082", sep=";")
-
-meta <- readLines("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.dimensions.json")
+  #Paketti datan lukemiseen
+  library(jsonlite)
+  library(rjson)
+  
+  #Luetaan aineisto sisään
+  aineisto <- fromJSON("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.json?row=dateweek2020010120201231-443686&column=hcdmunicipality2020-445222")
+  
+  dat <- read.csv("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?row=dateweek2020010120201231-443686&row=hcdmunicipality2020-445222&column=measure-141082", sep=";")
+  
+  dat <- read.csv("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?row=dateweek2020010120201231-443686&row=hcdmunicipality2020-445131&column=measure-141082", sep=";")
+  
+  meta <- readLines("https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.dimensions.json")
 } # ENDIF
 
 #Paketti datan lukemiseen
@@ -52,36 +52,12 @@ g <- list(
   visible = FALSE
 )
 
-#<<<<<<< HEAD
 ### Kartta tartuttavista (eli viimeisten X päivän tapauksista)
 
 observation_window <- 14 
 
 tmp <- dat[dat$date>=max(dat$date)-observation_window,]
 tmp <- aggregate(tmp$new, by=tmp[c("area")], FUN=function(x) sum(x, na.rm=TRUE))
-#=======
-### Kartta kaikista raportoiduista tapauksista
-if(FALSE) {
-tmp <- dat[dat$date==max(dat$date),]
-#>>>>>>> b4e35ca95f79ed74fb448ccd1682fc683b84c0d2
-fig <- plot_ly() %>%
-   add_trace(
-    type="choropleth",
-    geojson=geojson,
-    locations=tmp$area,
-    z=tmp$x,
-    zmin=0,
-    zmax=30,
-    colorscale="Viridis",
-    featureidkey="properties.Name"
-  ) %>%
-  layout(
-    geo = g
-  )
-fig
-
-pushIndicatorGraph(fig, 395)
-}
 
 ```
 
@@ -89,7 +65,6 @@ pushIndicatorGraph(fig, 395)
 
 ### Kartta kaikista raportoiduista tapauksista
 
-tmp <- dat[dat$date==max(dat$date),]
 fig <- plot_ly() %>%
    add_trace(
     type="choropleth",

@@ -142,13 +142,18 @@ breakingpoint <- merge(breakingpoint, mortality)
 ## Active cases in different countries
 
 ```{r active_cases}
+library(XML)
 
 infective <- count_infective(confirmed, index=c("Province","Country"))
 
-country <- c("Finland", "Romania", "Sweden","United Kingdom")
+# Read the population size data
+#ht <- readHTMLTable("https://data.worldbank.org/indicator/SP.POP.TOTL")
+#html_structure(ht)
+
+country <- c("Finland", "Romania", "Sweden","United Kingdom","Czechia","US","Hungary","France","Spain","Italy")
 
 plot_ly(
-  infective[infective$Country %in% country, ],
+  infective[infective$Country %in% country & infective$Province=="", ],
   x=~Date, y=~Infective, color=~paste(Country, Province), type="scatter", mode="lines") %>%
   layout(yaxis=list(title=paste("Number of confirmed infective cases in", paste(country, collapse=", "))))
 

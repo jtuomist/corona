@@ -17,7 +17,7 @@ library(plotly)
 #Paketti datan editoimiseen ja visualisointiin
  library(tidyverse)
  
-if(FALSE){ 
+if(FALSE){ # This chunk reads data from THL, which does not give daily counts.
   #Paketti datan lukemiseen
   library(jsonlite)
   library(rjson)
@@ -205,7 +205,7 @@ unlist(aineisto$dataset$dimension$dateweek2020010120201231$category$label)
 #Yhdistetään muuhun aineistoon
  dataset <- kategoriat %>% left_join(data,by=c("index"="rowname"))
  
-}
+} # ENDIF
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.

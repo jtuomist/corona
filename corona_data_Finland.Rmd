@@ -81,6 +81,13 @@ fig <- plot_ly() %>%
   )
 fig
 
+lifecycle::last_warnings()
+warnings()
+vignette('programming')
+
+```
+
+```{r}
 tmp <- tmp[order(-tmp$x),]
 
 cat("There are", sum(tmp$x), "infective corona cases in Finland right now.\n")

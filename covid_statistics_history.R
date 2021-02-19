@@ -69,13 +69,47 @@ for(i in tst) {
   out <- rbind(out, cbind(tmp, measure = "population"))
 }
 
-file <- "/var/www/html/rtools_server/runs/covid_statistics_history.csv"
+############################## VACCINATION
 
-if(file.exists(file)) {
-  inp <- read.csv(file) 
-} else {
-  inp <- data.frame()
+tst <- readLines("https://sampo.thl.fi/pivot/prod/api/vaccreg/cov19cov/fact_cov19cov.dimensions.json")
+weeks <- gsub(',', '', gsub('\\t\\"sid\\":', '', tst[grep("Vuosi", tst)-1]))
+
+url_base2 <- "https://sampo.thl.fi/pivot/prod/api/vaccreg/cov19cov/fact_cov19cov.json"
+
+# measure: Korona-annokset 141082
+# Ensimmäinen annos 518240
+# Toinen annos 518281
+# cov_vac_age: All ages 518413
+# There is no municipality-specific data available even at all ages - weekly level
+
+out2 <- data.frame()
+
+for(i in weeks) {
+  tmp <- fromJSONstat(
+    paste0(url_base2, "?row=area-518362&row=cov_vac_age-518413&column=dateweek20201226-531437&filter=measure-518240"),
+    naming = "label", use_factors = FALSE, silent = TRUE)[[1]]
+  tmp$measure <- "first shot"         
+  out2 <- rbind(out2, tmp)
+  
+  tmp <- fromJSONstat(
+    paste0(url_base2, "?row=area-518362&row=cov_vac_age-518413&column=dateweek20201226-",i,"&filter=measure-518281"),
+    naming = "label", use_factors = FALSE, silent = TRUE)[[1]]
+  tmp$measure <- "second shot"         
+  out2 <- rbind(out2, tmp)
+  
+}
+out2 <- out2[!is.na(out2$value),]
+
+storecsv <- function(obj, file) {
+  
+  if(file.exists(file)) {
+    inp <- read.csv(file) 
+  } else {
+    inp <- data.frame()
+  }
+  
+  write.csv(rbind(inp, obj), file, row.names = FALSE)
 }
 
-write.csv(rbind(inp, out), file, row.names = FALSE)
-
+storecsv(out, "data/covid_statistics_history.csv")
+storecsv(out2, "data/covid_vaccination_history.csv")

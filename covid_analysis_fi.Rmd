@@ -120,6 +120,36 @@ muni <- muni[order(muni$time),]
 plot_ly(data = muni, x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
   layout(title="Daily cases of covid-19 by place")
 
+#################### VACCINATION
+
+vac <- read.csv("http://77.86.191.32/rtools_server/runs/covid_vaccination_daily_fi.csv") #daily updates
+for(i in c(1,2,5)) {
+  vac[[i]] <- as.factor(vac[[i]])
+}
+vac$time <- as.POSIXct(vac$time)
+vac$SHP <- grepl("(SHP|Ahvenanmaa)",vac$place)
+
+days <- length(unique(vac$time))
+vac <- vac[vac$SHP & vac$age!="Kaikki iät",]
+vac <- vac[!(vac$time=="2021-03-01" & vac$measure=="second shot"),] # There seems to be double counting in data
+
+
+tmp <- aggregate(vac$value, by = vac[c("place","time","measure")], FUN=function(x) sum(x, na.rm=TRUE))
+plot_ly(tmp, x = ~time, y = ~x, color = ~place, linetype = ~measure, type="scatter", mode="lines") %>%
+  layout(title="Rokotuskattavuus")
+
+tmp <- aggregate(vac$value, by = vac[c("age","time","measure")], FUN=function(x) sum(x, na.rm=TRUE))
+plot_ly(tmp, x = ~time, y = ~x, color = ~age, linetype = ~measure, type="scatter", mode="lines") %>%
+  layout(title="Rokotuskattavuus")
+
+tmp <- aggregate(vac$value, by = vac[c("time","measure")], FUN=function(x) sum(x, na.rm=TRUE))
+plot_ly(tmp, x = ~time, y = ~x, color = ~measure, type="scatter", mode="lines") %>%
+  layout(title="Rokotuskattavuus")
+
+tmp <- aggregate(vac$value, by = vac[c("age","measure")], FUN=function(x) sum(x, na.rm=TRUE))
+tmp$x <- tmp$x / days
+plot_ly(tmp, x = ~age, y = ~x, color = ~measure, type="scatter", mode="lines") %>%
+  layout(title="Rokotuskattavuus")
 
 ```
 

@@ -35,6 +35,7 @@ for(i in c("place","age","date","sex","measure")) {
 }
 
 start <- as.POSIXct("2019-12-29 12:00 EET")
+shp <- as.character(unique(dat$place[grep("(SHP|Ahvenanmaa)",dat$place)]))
 
 dat$time <- (start + (as.numeric(substr(dat$date,10,10)) * 53 + as.numeric(substr(dat$date,19,20))) * 7*24*3600)
 dat$time[dat$period!="weekly"] <- as.POSIXct(paste0(dat$date[dat$period!="weekly"], " 12:00 EET"))
@@ -117,8 +118,25 @@ muni <- merge(muni, tmp2, all.x=TRUE)
 muni$daily <- ifelse(muni$period=="cumulative", muni$value - muni$old, muni$daily)
 muni <- muni[!is.na(muni$daily) & muni$time < Sys.time() , ]
 muni <- muni[order(muni$time),]
+week <- numeric()
+for(i in 1:nrow(muni)) {
+  ts <- muni[muni$place==muni$place[i] , c("time","daily")]
+  week <- c(week, mean(ts$daily[ts$time <= muni$time[i] & ts$time > muni$time[i]- 7*24*3600],na.rm = TRUE))
+}
+muni$week <- week
+
 plot_ly(data = muni, x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
   layout(title="Daily cases of covid-19 by place")
+
+tmp <- c("Helsinki","Espoo","Vantaa","Turku","Kuopio","Vaasa")
+plot_ly(data = muni[muni$place %in% tmp,], x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
+  layout(title="Daily cases of covid-19 by place")
+
+plot_ly(data = muni[muni$place %in% shp , ], x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
+  layout(title="Daily cases of covid-19 by place")
+
+plot_ly(data = muni[muni$place %in% tmp , ], x = ~time, y=~week, fillcolor=~place, type="scatter", mode="lines") %>%
+  layout(title="Weekly average cases of covid-19 by place")
 
 #################### VACCINATION
 

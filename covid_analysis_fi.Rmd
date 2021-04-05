@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(plotly)
+library(reshape2)
 
 ```
 
@@ -128,7 +129,8 @@ muni$week <- week
 plot_ly(data = muni, x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
   layout(title="Daily cases of covid-19 by place")
 
-tmp <- c("Helsinki","Espoo","Vantaa","Turku","Kuopio","Vaasa")
+tmp <- c("Helsinki","Espoo","Vantaa","Turku","Kuopio","Vaasa", "Oulu","Tampere","Jyväskylä","Pori",
+         "Rovaniemi","Järvenpää")
 plot_ly(data = muni[muni$place %in% tmp,], x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
   layout(title="Daily cases of covid-19 by place")
 
@@ -176,3 +178,26 @@ plot_ly(tmp, x = ~age, y = ~x, color = ~measure, type="scatter", mode="lines") %
 * Most municipalities are able to reduce the number of cases by more than a half in two weeks.
 * Important exceptions are Helsinki, Vantaa, Espoo, Rauma, and several small municipalities in Uusimaa.
 * After a long, slow worsening, the situation in Uusimaa is quickly starting to get bad since 2021-02-15.
+
+```{r regression}
+
+#tsd <- dat[dat$measure=="cases" & !grepl("SHP",dat$place) & dat$period=="weekly",]
+tsd <- dat[dat$measure=="cases" & dat$place!="Kaikki Alueet" & dat$period=="cumulative",]
+tsd <- tsd[order(tsd$peak),]
+tsd$date <- as.Date(tsd$time)
+tsd <- reshape(tsd[c("place","date","value")], v.names = "value", timevar = "place",idvar = "date",
+               direction="wide")
+colnames(tsd) <- gsub("value\\.","",colnames(tsd))
+tsd <- tsd[c("date",sort(colnames(tsd)[2:ncol(tsd)]))]
+trend <- data.frame(date = tsd$date)
+trend. <- trend[2:nrow(trend),1,drop=FALSE]
+for(i in 2:ncol(tsd)) {
+  tsd[[i]] <- ts(tsd[[i]], start=7, frequency = 7)
+  plot(decompose(tsd[[i]]),xlab=colnames(tsd)[i])
+  trend[[colnames(tsd[i])]] <- decompose(tsd[[i]])$trend
+  trend.[[colnames(tsd[i])]] <- trend[2:nrow(trend),i] - trend[1:(nrow(trend)-1),i]
+}
+
+plot_ly(data=melt(trend.,id.vars = "date",value.name="value", variable.name = "Area"),
+        x=~date, y=~value, color=~Area, type="scatter",mode="lines")
+```

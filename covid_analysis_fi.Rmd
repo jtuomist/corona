@@ -1,7 +1,7 @@
 ---
 title: "Covid analysis about the situation in Finland"
 author: "Jouni Tuomisto"
-date: "19 2 2021"
+date: "2021-04-06"
 output: html_document
 ---
 
@@ -10,6 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(plotly)
 library(reshape2)
+
+cities <- c("Helsinki","Espoo","Vantaa","Turku","Kuopio","Vaasa", "Oulu","Tampere","Jyväskylä","Pori",
+         "Rovaniemi","Järvenpää")
 
 ```
 
@@ -129,15 +132,13 @@ muni$week <- week
 plot_ly(data = muni, x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
   layout(title="Daily cases of covid-19 by place")
 
-tmp <- c("Helsinki","Espoo","Vantaa","Turku","Kuopio","Vaasa", "Oulu","Tampere","Jyväskylä","Pori",
-         "Rovaniemi","Järvenpää")
-plot_ly(data = muni[muni$place %in% tmp,], x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
+plot_ly(data = muni[muni$place %in% cities,], x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
   layout(title="Daily cases of covid-19 by place")
 
 plot_ly(data = muni[muni$place %in% shp , ], x = ~time, y=~daily, fillcolor=~place, type="scatter", mode="lines") %>%
   layout(title="Daily cases of covid-19 by place")
 
-plot_ly(data = muni[muni$place %in% tmp , ], x = ~time, y=~week, fillcolor=~place, type="scatter", mode="lines") %>%
+plot_ly(data = muni[muni$place %in% cities , ], x = ~time, y=~week, fillcolor=~place, type="scatter", mode="lines") %>%
   layout(title="Weekly average cases of covid-19 by place")
 
 #################### VACCINATION
@@ -182,9 +183,9 @@ plot_ly(tmp, x = ~age, y = ~x, color = ~measure, type="scatter", mode="lines") %
 ```{r regression}
 
 #tsd <- dat[dat$measure=="cases" & !grepl("SHP",dat$place) & dat$period=="weekly",]
-tsd <- dat[dat$measure=="cases" & dat$place!="Kaikki Alueet" & dat$period=="cumulative",]
-tsd <- tsd[order(tsd$peak),]
+tsd <- dat[dat$measure=="cases" & dat$place!="Kaikki Alueet" & dat$period=="cumulative" , ]
 tsd$date <- as.Date(tsd$time)
+tsd <- tsd[order(tsd$date),]
 tsd <- reshape(tsd[c("place","date","value")], v.names = "value", timevar = "place",idvar = "date",
                direction="wide")
 colnames(tsd) <- gsub("value\\.","",colnames(tsd))
@@ -193,11 +194,33 @@ trend <- data.frame(date = tsd$date)
 trend. <- trend[2:nrow(trend),1,drop=FALSE]
 for(i in 2:ncol(tsd)) {
   tsd[[i]] <- ts(tsd[[i]], start=7, frequency = 7)
-  plot(decompose(tsd[[i]]),xlab=colnames(tsd)[i])
   trend[[colnames(tsd[i])]] <- decompose(tsd[[i]])$trend
-  trend.[[colnames(tsd[i])]] <- trend[2:nrow(trend),i] - trend[1:(nrow(trend)-1),i]
+  trend.[[colnames(tsd[i])]] <- ts(tsd[2:nrow(tsd),i] - tsd[1:(nrow(tsd)-1),i], start=7, frequency=7)
+  if(colnames(tsd)[i] %in% cities) plot(decompose(trend.[[i]]),xlab=colnames(tsd)[i])
 }
 
 plot_ly(data=melt(trend.,id.vars = "date",value.name="value", variable.name = "Area"),
         x=~date, y=~value, color=~Area, type="scatter",mode="lines")
+
+#######################
+
+shp <- dat[dat$measure=="cases" & grepl("SHP",dat$place) & dat$period=="daily" , ]
+shp$date <- as.Date(shp$time)
+shp <- shp[order(shp$date),]
+shp <- reshape(shp[c("place","date","value")], v.names = "value", timevar = "place",idvar = "date",
+               direction="wide")
+shp <- shp[shp$date >= "2020-01-28" & shp$date <= "2021-02-14" , ] # no values beyond this period
+colnames(shp) <- gsub("value\\.","",colnames(shp))
+shp <- shp[c("date",sort(colnames(shp)[2:ncol(shp)]))]
+trends <- data.frame(date = shp$date)
+for(i in 2:ncol(shp)) {
+  shp[[i]] <- ts(shp[[i]], start=1, frequency = 7)
+  plot(decompose(shp[[i]]),xlab=colnames(shp)[i])
+  trends[[colnames(shp[i])]] <- decompose(shp[[i]])$trend
+}
+
+plot_ly(data=melt(trends,id.vars = "date",value.name="value", variable.name = "Area"),
+        x=~date, y=~value, color=~Area, type="scatter",mode="lines")
+
+
 ```

@@ -12,7 +12,7 @@ library(plotly)
 library(reshape2)
 
 cities <- c("Helsinki","Espoo","Vantaa","Turku","Kuopio","Vaasa", "Oulu","Tampere","Jyväskylä","Pori",
-         "Rovaniemi","Järvenpää")
+         "Rovaniemi","Järvenpää", "Pieksämäki", "Varkaus")
 
 ```
 

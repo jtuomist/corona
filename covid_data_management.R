@@ -82,3 +82,15 @@ ggplot(muni[muni$place %in% cities,], aes(x=as.Date(time), y=week, colour=place)
   )
 
 ggsave(paste0(folder,"covid_cases_cities.pdf"), width=10, height=12)
+
+ggplot(muni[muni$place %in% cities,], aes(x=as.Date(time), y=daily, colour=place))+
+  geom_line()+
+  coord_cartesian(xlim=c((Sys.Date()-30),Sys.Date()), ylim=c(0,100))+
+  scale_x_date(breaks="1 week")+
+  labs(
+    title="Daily cases of covid-19 by place",
+    x = "Date",
+    y = "Cases per day"
+  )
+
+ggsave(paste0(folder,"covid_cases_cities_daily.pdf"), width=10, height=12)

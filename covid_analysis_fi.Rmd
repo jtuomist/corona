@@ -102,6 +102,17 @@ ggplot(muni[muni$place %in% cities,], aes(x=time, y=week, colour=place))+
   labs(
     title="Weekly average cases of covid-19 by place"
   )
+
+ggplot(muni[muni$place %in% cities,], aes(x=as.Date(time), y=daily, colour=place))+
+  geom_line()+
+  coord_cartesian(xlim=c((Sys.Date()-30),Sys.Date()), ylim=c(0,100))+
+  scale_x_date(breaks="1 week")+
+  labs(
+    title="Daily cases of covid-19 by place",
+    x = "Date",
+    y = "Cases per day"
+  )
+
 #################### VACCINATION
 
 vac <- read.csv("http://77.86.191.32/rtools_server/runs/covid_vaccination_daily_fi.csv") #daily updates

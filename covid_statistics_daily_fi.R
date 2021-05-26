@@ -62,11 +62,12 @@ out <- rbind(out, tmp)
 
 tst <- readLines("https://sampo.thl.fi/pivot/prod/api/vaccreg/cov19cov/fact_cov19cov.dimensions.json")
 
-url_base2 <- "https://sampo.thl.fi/pivot/prod/api/vaccreg/cov19cov/fact_cov19cov.json"
+# aiemmin url_base2 <- "https://sampo.thl.fi/pivot/prod/api/vaccreg/cov19cov/fact_cov19cov.json"
+url_base2 <- "https://sampo.thl.fi/pivot/prod/fi/vaccreg/cov19cov/fact_cov19cov.json"
 
-# measure: Korona-annokset 141082
-# Ensimmäinen annos 518240
-# Toinen annos 518281
+# measure: Korona-annokset 533046 # aiemmin 141082
+# Ensimmäinen annos 533042 # aiemmin 518240
+# Toinen annos 533034 # aiemmin 518281
 # cov_vac_age: All ages 518413
 # There is no municipality-specific data available even at all ages - weekly level
 
@@ -74,24 +75,26 @@ hcd <- gsub(',', '', gsub('\\t\\"sid\\":', '', tst[c(grep("Ahvenanmaa", tst), gr
 out2 <- data.frame()
 for(i in hcd) {# Go through health care districts
   tmp <- fromJSONstat(
-    paste0(url_base2, "?row=area-", i, "&row=cov_vac_age-518413&column=dateweek20201226-525425.&filter=measure-518240"),
+    paste0(url_base2, "?row=cov_vac_dose-533170.533164.&row=area-", i, "&column=cov_vac_age-518413&filter=measure-533047"), # &row=cov_vac_age-518413&column=dateweek20201226-525425.&filter=measure-533046"),
     naming = "label", use_factors = FALSE, silent = TRUE)[[1]]
-  tmp$measure <- "first shot"         
   out2 <- rbind(out2, tmp)
   
-  tmp <- fromJSONstat(
-    paste0(url_base2, "?row=area-", i, "&row=cov_vac_age-518413&column=dateweek20201226-525425.&filter=measure-518281"),
-    naming = "label", use_factors = FALSE, silent = TRUE)[[1]]
-  tmp$measure <- "second shot"         
-  out2 <- rbind(out2, tmp)
+#  tmp <- fromJSONstat(
+#    paste0(url_base2, "?row=area-", i, "&row=cov_vac_age-518413&column=dateweek20201226-525425.&filter=measure-533034"),
+#    naming = "label", use_factors = FALSE, silent = TRUE)[[1]]
+#  tmp$measure <- "second shot"         
+#  out2 <- rbind(out2, tmp)
 }
 
 #> colnames(out2)
 #[1] "area"             "cov_vac_age"      "dateweek20201226" "value"            "measure"         
-colnames(out2) <- c("place","age","time","value","measure")
+colnames(out2) <- c("annos","place","age","value")
+out2$measure <- ifelse(out2$annos == "Ensimmäinen annos","first shot", "second shot")
+out2$annos <- NULL
 
 out$dateweek20200101 <- as.character(Sys.Date())
 out2$time <- as.character(Sys.Date())
+out2 <- out2[c("place","age","time","value","measure")]
 
 storecsv <- function(obj, file) {
   
@@ -100,7 +103,6 @@ storecsv <- function(obj, file) {
   } else {
     inp <- data.frame()
   }
-    
   write.csv(rbind(inp, obj), file, row.names = FALSE)
 }
 

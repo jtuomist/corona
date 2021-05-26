@@ -4,7 +4,7 @@
 library(tidyverse)
 
 cities <- c("Helsinki","Espoo","Vantaa","Turku","Kuopio","Vaasa", "Oulu","Tampere","Jyväskylä","Pori",
-            "Rovaniemi","Järvenpää", "Pieksämäki", "Varkaus")
+            "Lahti","Rovaniemi","Järvenpää", "Pieksämäki", "Varkaus")
 
 if(FALSE) {
   URL <- "http://77.86.191.32/rtools_server/runs/" # from where to take the previous data
@@ -94,3 +94,24 @@ ggplot(muni[muni$place %in% cities,], aes(x=as.Date(time), y=daily, colour=place
   )
 
 ggsave(paste0(folder,"covid_cases_cities_daily.pdf"), width=10, height=12)
+
+#################### VACCINATION
+# There is problem with collected data: first and second vaccination numbers are equal for some reason.
+
+vac <- read.csv(paste0(URL,"/covid_vaccination_daily_fi.csv")) #daily updates
+for(i in c(1,2,5)) {
+  vac[[i]] <- as.factor(vac[[i]])
+}
+vac$time <- as.POSIXct(vac$time)
+vac$SHP <- grepl("(SHP|Ahvenanmaa)",vac$place)
+
+if(FALSE){
+days <- length(unique(vac$time))
+vac <- vac[vac$SHP & vac$age!="Kaikki iät",]
+vac <- vac[!(vac$time=="2021-03-01" & vac$measure=="second shot"),] # There seems to be double counting in data
+
+
+tmp <- aggregate(vac$value, by = vac[c("place","time","measure")], FUN=function(x) sum(x, na.rm=TRUE))
+plot_ly(tmp, x = ~time, y = ~x, color = ~place, linetype = ~measure, type="scatter", mode="lines") %>%
+  layout(title="Rokotuskattavuus")
+}

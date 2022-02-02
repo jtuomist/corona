@@ -1,0 +1,228 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+
+```{r setup}
+
+library(reshape2)
+library(plotly)
+library(magrittr)
+library(tidyverse)
+
+lag <- 0 * 24*3600 # Lag structure not needed. Daily numbers work just fine even if the death toll depends on previous, not current, cases.
+
+count_infective <- function(
+  df, # dataframe with timeseries data on cases
+  index = c("County","State","Country"), #spatial indices used
+  duration=20 # time of infectivity
+  ) {
+  df$Date <- as.Date(df$Date)
+  tmp <- df
+  tmp$Date <- tmp$Date+1
+  tmp <- merge(df, tmp, by=c(index,"Date"))
+  tmp$Infective <- tmp$Confirmed.x - tmp$Confirmed.y
+  
+  out <- data.frame()
+  for(i in sort(unique(tmp$Date))) {
+    tmp2 <- tmp[tmp$Date<=i & tmp$Date>i-20,]
+    tmp2 <- aggregate(tmp2["Infective"], by=tmp2[index], FUN=function(x) sum(x, na.rm = TRUE))
+    out <- rbind(out, cbind(Date=as.Date(i, origin="1970-01-01"), tmp2))
+  }
+  return(out)
+}
+
+
+```
+
+There is heated debate about whether aggressive testing and quarantining of COVID-19 patients is worthwhile of not. Many infection epidemiologists say that an epidemic cannot be contained and therefore it is necessary to slow it down to maintain the capacity of health care system. 
+
+Unfortunately, the logic of exponential growth stumps this approach. The growth rate of the epidemic has been 25-30 % per day without effective eradication measures. A second job does not help you much if you have taken a loan, however small, with an interest rate of 25 % PER DAY, i.e. 80000 % per month.
+
+The following graphs are based on global data from Johns Hopkins University. They demonstrate that some countries that did not start aggressive testing are showing an abrupt increase of mortality (as measured by the cumulative number of deaths per cumulative number of confirmed cases) ca. 9 days after the onset of the epidemic. The onset is defined as the date when there are at least 100 confirmed COVID-19 cases in the country or region.
+
+Of course, the number of confirmed cases strongly depends on the testing approach, as without testing there are no confirmed cases. For example in Iran and Washington, US, (the lines starting from 9 and 8 %, respectively) probably tested very little in the beginning and had a lot of deaths per confirmed case, but the number went down significantly when more actual cases were identified, tested, and confirmed.
+
+It is worrying that the mortality starts to increase very soon, only nine days after the onset. Therefore, a country that does not take aggressive COVID-19 policies very seriously very quickly, enters from only a few cases of disease into a collapse of the health care system within two weeks.
+
+On the other hand, it is reassuring that every one of the the Chinese provinces with >300 confirmed cases, in addition to South Korea, have been able to stop the epidemic within 35 days from the onset. Also Singapore and Taiwan have been successful, but they are not shown on the graph because thay have been able to keep the number of confirmed cases balow 300.
+
+As of March 20, many countries in Europe have started much more aggressive policies during the last five to seven days. It is too early to tell from data what is the impact of these policies. Let us hope that they are effective, but there is no time to wait and see what happens. One day of inaction may push us over the brink.
+
+Hover the cursor over the graphs to see more details.
+
+The code is available at https://github/jtuomist/corona with an open license. You are free to spread and modify the code. (c) Jouni Tuomisto
+
+## Cumulative cases since the day of 100 cases
+
+```{r mortality_timeline, echo=FALSE, message=FALSE, warning=FALSE}
+
+confirmed <- read.csv("https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",
+                      stringsAsFactors = FALSE)
+deaths <- read.csv("https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",
+                   stringsAsFactors = FALSE)
+
+confirmed <- melt(confirmed, id.vars = 1:4, variable.name="Date", value.name = "Confirmed")
+confirmed$Date <- as.POSIXct(confirmed$Date, format="X%m.%d.%y")
+colnames(confirmed)[1:2] <- c("Province","Country")
+
+day100 <- confirmed[confirmed$Confirmed>=100 & !is.na(confirmed$Confirmed),]
+day100 <- aggregate(day100$Date, by = day100[c("Province","Country")], FUN=min)
+
+confirmed <- merge(confirmed, day100, all.x=FALSE) # Drop data from countries with <100 cases
+confirmed$Day100 <- as.numeric((confirmed$Date - confirmed$x) / 24 / 3600)
+tmp <- merge(confirmed[colnames(confirmed)!="x"], cbind(confirmed[c("Province", "Country")],
+                              Lag7 = confirmed$Confirmed,
+                              Day100 = confirmed$Day100 + 7),
+             all.x=TRUE)
+tmp$Weekrate <- tmp$Confirmed / tmp$Lag7
+
+tmp <- tmp[as.character(tmp$Date) %in% as.character(Sys.Date()-c(1,8)),]
+
+co <- c("Finland", "Sweden","France","Germany","US","Spain","Italy","UK","South Korea",
+        "Switzerland","Diamond Princess", "Iran","Singapore","Taiwan", "Norway",
+        "Denmark","Iraq","Ireland","US")
+
+healing_rate <- 1/(20/21)^7 # rate of COVID-19 patients getting well
+
+plot_ly(tmp[!is.na(tmp$Day100) & tmp$Country %in% co,], x=~Confirmed, y=~Weekrate, color=~paste(Province, Country), type="scatter", mode="lines+markers") %>%
+  layout(xaxis=list(type="log", title="Confirmed cases (cumulative)"),
+         yaxis=list(title="Multiplication of confirmed cases during the previous week")
+         ) %>%
+  add_segments(x=1, xend=70000, y=healing_rate, yend=healing_rate, name="Sustainable", color="red")
+
+plot_ly(tmp[!is.na(tmp$Day100) & tmp$Country !="China",], x=~Confirmed, y=~Weekrate, color=~paste(Province, Country), type="scatter", mode="lines+markers") %>%
+  layout(xaxis=list(type="log", title="Confirmed cases (cumulative)"),
+         yaxis=list(title="Multiplication of confirmed cases during the previous week")
+         ) %>%
+  add_segments(x=1, xend=70000, y=healing_rate, yend=healing_rate, name="Sustainable", color="red")
+
+deaths <- melt(deaths, id.vars = 1:4, variable.name="Date", value.name = "Deaths")
+deaths$Date <- as.POSIXct(deaths$Date, format="X%m.%d.%y") - lag
+colnames(deaths)[1:2] <- c("Province","Country")
+
+mortality <- merge(confirmed, deaths[-(3:4)]) # Don't use Lat and Long in merge
+mortality <- mortality[mortality$Confirmed>300 & !is.na(mortality$Confirmed) |
+                         mortality$Country=="Finland" & mortality$Confirmed>10,  ] # Small numbers are too unreliable to be useful in mortality calculations
+mortality$CFR <- mortality$Deaths / mortality$Confirmed
+
+confirmed <- confirmed[order(confirmed$Country, confirmed$Day100) , ]
+
+plot_ly(confirmed[!is.na(confirmed$Day100) & confirmed$Country!="China",], x=~Day100, y=~Confirmed, color=~paste(Province, Country), type="scatter", mode="lines") %>%
+  layout(yaxis=list(type="log"))
+
+plot_ly(mortality[!is.na(mortality$Day100) & mortality$Country!="China",], x=~Day100, y=~Deaths, color=~paste(Province, Country), type="scatter", mode="lines") %>%
+  layout(yaxis=list(type="log"))
+
+plot_ly(mortality[mortality$Country!="China",], x=~Day100, y=~CFR, color=~paste(Province, Country),
+        type="scatter", mode="lines") %>%
+  layout(title="COVID-19 CFR in countries with >300 cases excluding China",
+         xaxis=list(title="Days since the onset of epidemic"))
+
+plot_ly(mortality[mortality$Country=="China",], x=~Day100, y=~CFR, color=~paste(Province, Country), type="scatter", mode="lines") %>%
+  layout(title="COVID-19 CFR in provinces with >300 cases in China",
+         xaxis=list(title="Days since the onset of epidemic"))
+
+# Breakingpoint: The date when the CFR (case fatality rate; cumulative deaths per cumulative confirmed cases starts to rise (above typical 2 %)
+
+breakingpoint <- data.frame(
+  Country.Region = c("Italy","Iran","Spain","United Kingdom","Netherlands"),
+  Date = as.POSIXct(c("2020-03-2", "2020-03-08", "2020-03-11", "2020-03-16", "2020-03-17"))
+)
+breakingpoint <- merge(breakingpoint, mortality)
+
+# It seems that CFR starts to rise when there are ca 50 corona deaths (200 in Iran) or ca 2000 confirmed cases (6500 in Iran)
+
+```
+
+## Active cases in different countries
+
+```{r active_cases}
+library(XML)
+
+infective <- count_infective(confirmed, index=c("Province","Country"))
+
+# Read the population size data
+#ht <- readHTMLTable("https://data.worldbank.org/indicator/SP.POP.TOTL")
+#html_structure(ht)
+
+country <- c("Finland", "Romania", "Sweden","United Kingdom","Czechia","US","Hungary","France","Spain","Italy")
+
+plot_ly(
+  infective[infective$Country %in% country & infective$Province=="", ],
+  x=~Date, y=~Infective, color=~paste(Country, Province), type="scatter", mode="lines") %>%
+  layout(yaxis=list(title=paste("Number of confirmed infective cases in", paste(country, collapse=", "))))
+
+
+
+```
+
+## Active cases in the U.S.
+
+```{r}
+
+confirmed_us <- read.csv("https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv", stringsAsFactors = FALSE)
+
+deaths_us <- read.csv("https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv", stringsAsFactors = FALSE)
+
+confirmed_us <- melt(confirmed_us[-(1:5)], id.vars = 1:6, variable.name="Date", value.name = "Confirmed")
+confirmed_us$Date <- as.Date(confirmed_us$Date, format="X%m.%d.%y")
+colnames(confirmed_us)[1:3] <- c("County","State","Country")
+
+################################3333
+
+tmp <- aggregate(confirmed_us["Confirmed"], by=confirmed_us[c("State","Country","Date")], FUN=function(x) sum(x, na.rm=TRUE))
+tmp <- merge(tmp, cbind(tmp[c("State", "Country")],
+                              Lag7 = tmp$Confirmed,
+                              Date = tmp$Date + 7),
+             all.x=TRUE)
+tmp$Weekrate <- tmp$Confirmed / tmp$Lag7
+
+tmp <- tmp[as.character(tmp$Date) %in% as.character(Sys.Date()-c(2,9)),]
+
+plot_ly(tmp, x=~Confirmed, y=~Weekrate, color=~paste(State, Country), type="scatter", mode="lines+markers") %>%
+  layout(xaxis=list(type="log", title="Confirmed cases (cumulative)"),
+         yaxis=list(title="Multiplication of confirmed cases during the previous week")
+         ) %>%
+  add_segments(x=1, xend=70000, y=healing_rate, yend=healing_rate, name="Sustainable", color="red")
+
+#########################################
+if(FALSE){
+infective <- confirmed_us
+infective$Date <- infective$Date+1
+infective <- merge(confirmed_us, infective, by=c("County","State","Country","Date"))
+infective$Infective <- infective$Confirmed.x - infective$Confirmed.y
+
+out <- data.frame()
+for(i in sort(unique(infective$Date))) {
+  tmp <- infective[infective$Date<=i & infective$Date>i-20,]
+  tmp <- aggregate(tmp["Infective"], by=tmp[c("County","State","Country")], FUN=function(x) sum(x, na.rm = TRUE))
+  out <- rbind(out, cbind(Date=as.Date(i, origin="1970-01-01"), tmp))
+}
+}
+#############################
+
+infective_us <- count_infective(confirmed_us)
+
+plot_ly(
+  aggregate(confirmed_us["Confirmed"], by=confirmed_us[c("Date","State")], FUN=function(x) sum(x, na.rm=TRUE)),
+  x=~Date, y=~Confirmed, color=~State, type="scatter", mode="lines") %>%
+  layout(yaxis=list(type="log",title="Number of confirmed cases"))
+
+plot_ly(
+  aggregate(infective_us["Infective"], by=infective_us[c("Date","State")], FUN=function(x) sum(x, na.rm=TRUE)),
+  x=~Date, y=~Infective, color=~State, type="scatter", mode="lines") %>%
+  layout(yaxis=list(title="Number of confirmed infective cases"))
+
+state <- "New York"
+
+plot_ly(
+  infective_us[infective_us$State==state, ],
+  x=~Date, y=~Infective, color=~County, type="scatter", mode="lines") %>%
+  layout(yaxis=list(title=paste("Number of confirmed infective cases in", state)))
+
+```

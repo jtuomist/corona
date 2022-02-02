@@ -1,0 +1,146 @@
+---
+title: "Koronatoimien teho Suomessa"
+author: "Jouni Tuomisto"
+date: "2020-05-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+tilastoitu <- 1/3 # Tilastoissa on ehkä kolmannes. 
+tartuttavat <- 1445/tilastoitu # ihmistä Suomessa. Arvio tulee Ylen keräämästä THL:n datasta, josta arvioidaan aktiiviset tartuttajat tartuntapäivän perusteella. Katso corona_data_Finland.Rmd
+tartuttavat_helsinki <- 1000/tilastoitu # Luvuissa koko PKS
+tartuttavat_turku <- 38 /tilastoitu
+todetut <- 6300 # ihmistä Suomessa
+tapaukset <- todetut/tilastoitu # ihmistä Suomessa. 
+eristyskustannus <- 200 # €/d
+eristyskesto <- 20 # d
+vakimaara <- 5500000 # ihmistä Suomessa
+vakimaara_helsinki <- 1600000 # ihmistä HUS-alueella
+vakimaara_turku <- 187000 # asukasta Turussa (2016)
+kontaktit <- 20 # henkilöä. 10 hlö/d, joka päivä vain puolet on uusia
+R0 <- 2.4 # Sopii suomalaiseen dataan
+oireettomat <- 0.5 # oireettomien osuus tartuttavista koronapotilaista
+oireilevat_uri <- 0.01 # % ajasta kun on ylähengitystieoireita
+varma_koronaoire <- 0.3 # osuus oireilevista, joilla diagnoosi varmistuu jo oireista
+
+# esto: mikä osuus tartunnoista voidaan estää kyseisellä toimenpiteellä
+esto_testaus <- 0.8 # Positiivisen testin tuoma lisäeristäytyminen oireettomalla
+esto_oiretieto <- 0.5*0.5*(esto_testaus*varma_koronaoire + esto_testaus*0.5*(1-varma_koronaoire)) # Puolet tartuttajista oireettomia, puolet tartunnoista tapahtuu ennen oireilua. Eristäytyminen on puolet lievempää, jos on vain epämääräisiä yläähengitystieoireita. Tiukka eristäytyminen, jos varmat oireet tai testi.
+esto_yskiihihaan <- 0.4 * 0.15 # Teho sama kuin kangasmaskilla, yskiminen aiheuttaa 15 % erityksestä
+esto_maski <- 0.05 # Omatekoisen maskin teho 20-50 %, käytetään joukkoliikenteessä ym. eli ehkä viidenneksessä kontakteista.
+esto_kasienpesu <- 0.05
+esto_tartuttaja <- 1 - (1-esto_oiretieto) * (1-esto_yskiihihaan) * (1-esto_maski) * (1-esto_kasienpesu)
+esto_henkilokuntasuojaus <- 0.95 * 0.20 # Suojaus on hyvä, mutta vaikutus koskee vain sitä osaa koronapotilaista jotka joutuvat sairaalaan tai ovat hoitokodissa
+esto_kotitartunta <- -0.2*0.5 # Viidennes (eli perusoletuksella 4 henkeä) kontakteista on kotona ja kotona eristys perheenjäseniin nähden on vain 50 % 
+esto_nenankaivu <- 0.05 # Arvaus
+esto_kevyteristys <- 0.1 # Arvaus
+esto_ulkotapaaminen <- 0.9 * 0.1 # Pienhiukkasten iF ulkoilmassa enintään 10 % sisäilma-arvoista. Ulkotapaamisia kuitenkin voi järjestää melko vähän.
+esto_yleisotapahtuma <- 0.05 # Arvaus. Hyvä vaikuttavuus mutta vähän kontakteja
+esto_tarttuva <- 1 - (1-esto_kasienpesu) * (1-esto_henkilokuntasuojaus) *
+  (1-esto_kotitartunta) * (1-esto_nenankaivu) * (1-esto_kevyteristys) *
+  (1-esto_ulkotapaaminen) * (1-esto_yleisotapahtuma)
+esto_koronahotelli <- -esto_kotitartunta*0.5 # Mahdollinen toteuttaa puolessa tapauksista.
+
+```
+
+## Koronaepidemia on tieto-ongelma
+
+Koronaepidemia on perimmältään tieto-ongelma. Epidemia on pysäytettävissä hyvin yksinkertaisella keinolla: jokainen tartunnan saanut eristetään muista, kunnes hän ei enää eritä virusta, eli noin kolme viikkoa. Tämän jälkeen virusta ei enää ole.
+
+Ongelma on se, että me emme tiedä, keitä ne tartuttavat ihmiset ovat. Tämä tietopuute tulee todella kalliiksi. 
+
+Tässä kirjoituksessa yritetään arvioida koronan tartuttavuutta, erilaisten toimenpiteiden tehokkuutta taudin hidastamisessa ja kustannuksia. Kaikki arviot ovat ylimalkaisia ja kirjoittajan vastuulla, mutta suuruusluokka on yritetty saada oikeaksi.
+
+Suomessa koronapotilaita on ollut tiedossa `r todetut` ja arviolta yhteensä `r format(tapaukset, scientific=FALSE, big.mark=" ")` henkilöä. Tämänhetkinen tartuttavien määrä ei ole tiedossa, mutta se ei ole ainakaan suurempi, koska osa on ehtinyt parantua, joten oletetaan `r format(tartuttavat, scientific=FALSE, big.mark=" ")` tartuttavaa. Yhden tartuttavan eristämisen kustannus `r eristyskustannus` €/d ja sen kesto on `r eristyskesto` päivää. Näillä luvuilla ja täydellisellä tiedolla tauti hävitetään Suomesta `r signif(tartuttavat * eristyskustannus * eristyskesto / 1E6, 2)` miljoonalla eurolla, mikä on yhteiskunnallisesti katsottuna ilmaista.
+
+Tässä tarkastelussa oletetaan, että meillä on käytössä kansainvälisesti tuotettu tieto taudin tartuntamekanismeista, tarttumisherkkyydestä ja hoitotarpeesta. Sen sijaan eri skenaarioiden välillä muutetaan tietoa siitä, miten tarkkaan tiedämme tartuttavat henkilöt.
+
+Heikoin väestötason tieto olisi se, että emme tietäisi yhtään kenellä tauti on, vaan kaikki olisivat yhtä todennäköisiä. Tietäisimme vain, että tartuttaja tartuttaa keskimäärin `r R0` henkilöä (eli R0:n verran) ilman mitään koronatoimenpiteitä. Tällä tiedolla tauti voitaisiin pysäyttää eristämällä koko väestö, mutta se maksaisi `r vakimaara * eristyskustannus * eristyskesto / 1E9` miljardia euroa ja pilaisi Suomen talouden. Siitä saadaan kuitenkin rationaalisen pysäyttämispolitiikan hinnan teoreettinen yläraja. Tietenkin epärationaalisella toiminnalla voidaan saada paljon enemmänkin kustannuksia aikaan.
+
+Onneksi kuitenkin suunnilleen tiedämme kokonaismäärän ja tartuttavien keskittymisen Helsingin seudulle. Jos Helsingin alueella kaikki eristettäisiin, lasku olisi silti `r vakimaara_helsinki * eristyskustannus * eristyskesto / 1E9` miljardia euroa, mutta tauti pysähtyisi vain Uudellamaalla ja saattaisi lähteä uudestaan leviämään jostain muualta. Joka tapauksessa tautia tulee jonkin verran ulkomailta, ellei sitä saada joskus tulevaisuudessa kokonaan hävitettyä rokotuksin. Alueiden asukkaiden eristäminen toistuvasti on muutenkin epäkätevää, joten kannattaa miettiä vaihtoehtoja.
+
+Jos sairastuneista pidetään huolellisesti kirjaa (mikä on niin halpaa, ettei sen kustannuksia tässä lasketa), voidaan eristäminen kohdistaa tartuttaviksi todettuihin, ja se on jo varsin halpaa verrattuna aiempiin vaihtoehtoihin: vain `r todetut * eristyskustannus * eristyskesto / 1E6` miljoonaa euroa. Tällä tavalla tartuttavista ihmisistä saadaan kuitenkin selville vain pienehkö osa, koska osa tartuttavista on oireettomia, ja epidemia jatkaa kasvuaan.
+
+Millä keinoilla voisimme päästä nykytilanteesta parempaan tietoon? Helsingin alueella on `r vakimaara_helsinki / 1E6` miljoonaa asukasta, ja vain `r signif(tartuttavat / vakimaara_helsinki * 100, 2)` prosenttia on tällä hetkellä tartuttavia.
+
+Ihmisellä on Suomessa noin tusina kontaktia päivässä, mutta se vaihtelee paljon iästä ja muista tekijöistä riippuen. Haarukoidaan kuitenkin karkeasti keskimääräistä tilannetta.
+
+Ehkä puolet on sellaisia, jotka on tavannut myös edellisenä päivänä. Uusien tuttavuuksien määrä siis vähenee ajan kuluessa, ja 25 päivä aikana on tavannut ehkä `r kontaktit` eri ihmistä. Koska Suomessa tartuttavuusluku on noin `r R0`, tartunnan todennäköisyys keskimääräisessä kohtaamisessa on `r round(R0 / kontaktit * 100, 0)` %.
+
+Tarkastellaan kahta ihmistä, joista toisen on satunnainen koronaviruksen kantaja ja toinen on tällaisen ihmisen satunnainen kontakti. Miten tartunta näiden välillä on estettävissä, ja mitä meidän on tiedettävä pystyäksemme estämään sen?
+  
+### Tartuttaja
+
+Pysyy poissa tartuttamasta. Tämä on kaikkein tehokkain mutta edellyttää, että tietää tartuttavansa. Puolet on oireettomia ja puolet tartunnoista tapahtuu ennen oireiden alkua (koska oireiden alettua ihmiset osaavat eristäytyä ja kontaktit vähenevät normaalista). Eli vain `r round(esto_oiretieto*100, 0)` % tartunnoista voidaan estää tartuttajan oiretiedon perusteella. Tässä oletetaan, että epäselvä oireilu vähentää kontakteja vain puoleen ja vasta varma diagnoosi eristää potilaan kunnolla.
+
+Lisäksi tämä edellyttää, että tartuttajan on mahdollista eristäytyä. Monet räjähdysmäiset leviämiset maailmalla tapahtuivat paikoissa, joissa ihmiset asuvat ahtaasti eivätkä voi jäädä pois töistä vaikka sairastuvat, kuten Pohjois-Italian hikipajoissa. Suomessa onneksi on hyvä tilanne tässä asiassa.
+
+Tartuttaja voi myös vähentää tartuntoja vaikka ei tiedä tartuttavansa. Näitä käytetään yleisesti ja voi ajatella että ne ovat riittävän vaivattomia kaikkien käyttöön.
+
+Yskii hihaan. Vähentää puolet yskösten viruksista mutta ei vaikuta puhuessa tai laulaessa pisarointiin. Vaikutus `r esto_yskiihihaan * 100` %.
+
+Käyttää maskia. Omatekoisen maskin teho on 20-50 % mutta vain siellä missä käytetään. Joukkoliikenne, julkiset tilat. Ehkä viidesosa kohtaamisista eli kokonaisvaikutus `r esto_maski * 100` %.
+
+Pesee kädet eikä koskettele pintoja. Pinnat eivät ehkä ratkaisevan tärkeitä. Vaikutus `r esto_kasienpesu * 100` %.
+
+Karkeasti tartuttaja voi vähentää tartuntariskiä `r round(esto_tartuttaja * 100,0)` % nykytiedon valossa, mutta pitää olla motivoitunut noudattamaan ohjeita jatkuvasti. Näillä tartuttavuusluku laskee oletusarvosta `r R0` arvoon `r round(R0 * (1-esto_tartuttaja),2)`.
+
+### Tartunnan kohde
+
+Tartunnan kohteeksi joutuvan toimet parantavat tilannetta myös.
+
+#### Tartunnan kohteen täsmätoimet
+
+Tehokasta on vähentää riskiryhmien altistumista.
+
+Hoitohenkilökunta voi suojautua hoitaessaan koronapotilaita. Vaikuttavuus on hyvä, mutta suurin osa koronapotilaista pysyy kotona tarvitsematta ulkopuolista hoitoa, joten hyöty koskee vain sairaalaan joutuvien tai hoitokodissa olevien potilaiden henkilökuntaa. Kokonaisvaikutus arvioidaan suuruusluokkaan `r esto_henkilokuntasuojaus * 100` %.
+
+Tartuttajan eristys kotona. Jos joku tiedetään tartuttajaksi, on erittäin tärkeää estää tartunnat muihin perheenjäseniin. Kiinassa tämä tartuntatapa selitti 80 % tartunnoista karanteenin aikana (VIITE). Siksi ensimmäisenä mainittu, oiretietoon perustuva teho `r round(esto_oiretieto*100, 0)` % toimii vain jos kotitartunnat estetään. On syytä olettaa, että isohko osa tartuttajan normaalikontakteista on kotona ja eristämisteho on melko heikko, joten tämän huomioiminen aiheuttaa `r round(-esto_kotitartunta * 100,0)` % huononnuksen tilanteeseen. Luku on suuri, koska se vaikuttaa kaikkiin koronapositiivisiin, joiden eristäminen yritetään hoitaa kotioloissa.
+
+Tätä ongelmaa voidaan vähentää ottamalla käyttöön karanteenihotellit, jossa sairaat siirretään pois kotoa tartuttamasta. Leviäminen pysähtyy hyvin mutta ongelmana kustannukset ja epävarmaa kuinka monelle soveltuu. Teho on suuruusluokkaa `r round(esto_koronahotelli*100, 0)` %.
+
+#### Tartunnan kohteen yleistoimet
+
+Muut keinot eivät ole täsmätoimia, koska tartuttajaa ei tiedetä. Niitä ei voi kohdentaa vaan koko väestöä on pidettävä potentiaalisina tartuttajina.
+
+Pesee kädet. Teho `r esto_kasienpesu * 100` %
+
+Ei koske kasvoja tai kaiva nenää. Teho `r esto_nenankaivu * 100` %.
+
+Välttää ihmiskontakteja. Tämä on erittäin monimuotoinen toimenpide ja jotkin asiat ovat hyvin halpoja tai jopa suotuisia. Voi esimerkiksi mennäkin baarin sijasta lenkille luontoon, jolloin sekä henkinen että fyysinen suorituskyky paranevat. Mutta välttämisen lisääntyessä myös haitat lisääntyvät. Oletetaan `r esto_kevyteristys * 100` % teho ilman merkittäviä haittoja, esim. etätyö ja muut kevyet toimet.
+
+Vanhusten eristäminen toki vähentää terveyshaittoja tehokkaammin kuin lieviä oireita saavien koululaisten. Mutta epidemian leviämisen kannalta vanhukset eivät ole niin tärkeitä, koska heillä on luonnostaan vähemmän kontakteja. Siksi voisi ajatella, että vanhusten lisäeristäminen on tehokasta vakavien tautitapausten välttämiseksi mutta ei ole kovin tehokasta epidemian pysäyttämiseksi. Tämä ei koske hoitolaitoksia, joissa korotetty hygieniataso suojaa niin henkilökuntaa kuin vanhuksia ja estää epidemian leviämistä hyvin. Tehoa vaikea arvioida suoraviivaisesti, koska vaatii ikäryhmäkohtaista laskentaa.
+
+Tapaamiset ulkona. Pienhiukkasaltistumisen saantiosuus on tyypillisesti kymmenesosa ulkolähilähteille kuten liikenteelle verrattuna sisälähteisiin kuten kynttilöihin. Niinpä voidaan olettaa 90 % teho kohtaamisille, jotka järjestetäänkin ulkona. Tällaisia kohtaamisia on kuitenkin melko vähän. Teho on arviolta `r esto_ulkotapaaminen * 100` %.
+
+Välttää riskipaikkoja kuten ravintoloita ja yleisötapahtumia. Yhteiskunnallisesti ja kulttuurisesti kallis toimenpide, teho kuitenkin hyvä näille kohtaamisille. Teho ehkä `r esto_yleisotapahtuma * 100` % koska kontakteja ei kovin paljon.
+
+Yllä olevat toimet siis on toteutettavissa nykytiedolla. Tartuttaja voi vähentää tartuntariskiä `r round(esto_tartuttaja * 100,0)` % ja tartunnan kohde `r round(esto_tarttuva * 100,0)` %. Yhteisteho on `r round((1-(1-esto_tartuttaja) * (1-esto_tarttuva)) * 100,0)` %, jolloin R0 painuu arvoon `r round(R0 * (1-esto_tartuttaja) * (1-esto_tarttuva),2)`. 
+
+On syytä huomata, että Suomessa R0 on selvästi alempi eli noin 0.9 jo nykyisillä toimilla, joihin ei kuulu maskin käyttö. Toisaalta testaus ja jäljitys eivät vielä ole mukana tarkastelussa, joten ehkä arvio on suunnilleen kohdallaan.
+
+## Lisätietoa vaativat toimenpiteet
+
+Seuraavat toimet vaativat lisätiedon hankkimista, ennen kuin niitä voidaan toteuttaa.
+
+Henkilö voidaan testata koronaviruksen varalta RT-PCR-menetelmällä, joka kertoo meneillään olevasta tartunnasta. Selväoireisella ihmisellä ei vaikuta suojautumiseen, koska tämä on jo eristäytynyt, mutta vähäoireiset ja oireettomat osaavat nyt eristäytyä. Testauksen teho on `r esto_testaus * 100` % oireettomien osalta, jotka eivät siis olisi lainkaan eristäytyneet ilman testitulosta. 
+
+Testauksen kriittinen kysymys kuuluu: miten saadaan tehokkaasti testeihin ne, joilla ei ole oireita eli noin puolet sairastuneista ja pari ensimmäistä päivää?
+
+Testaukset toteutetaan siten, että ensin valitaan joukko kriteereitä testaukselle. Sitten kriteerit täyttävä väestö testataan kokonaan yhden päivän aikana. Tällöin ei otetan kantaa siihen, pitääkö samoja ihmisiä testata uudestaan, vaan se harkinta tehdään erikseen. Mahdollisia kriteereitä on listattu summittaisessa paremmuusjärjestyksessä alla.
+
+* Koronapositiivisen henkilön kaikki kontaktit jäljitetään ajanhetkeen kaksi viikkoa ennen oireiden alkamista ja testataan. Pyritään siis löytämään sekä tartunnan aiheuttaja että tartutetut. Osuman todennäköisyys testatuista on `r signif(2/kontaktit/1.5, 2) # olettaen että tutkitaan myös 50 % ihmisiä, jotka eivät oikeasti olleetkaan kontakteja. Koronapositiivisia oletetaan löytyvän tartuttaja ja yksi tartutettu`.
+* Henkilöllä on epäselviä ylähengitystieoireita. Selvätkin koronaoireet tulee toki varmentaa myös testein, jotta hoito ja seuranta toteutuu kunnolla. Mutta laskennassa selvä koronaoire johtaa diagnoosiin ja vaadittaviin toimenpiteisiin suoraan, ja testaus vaikuttaa vain jos syy on epäselvä. Osuman todennäköisyys pääkaupunkiseudulla (`r signif((tartuttavat_helsinki * (1-oireettomat) * (1-varma_koronaoire) / vakimaara_helsinki) / oireilevat_uri, 2)`) on suuren taustariskin takia suurempi kuin esimerkiksi Turussa (`r signif((tartuttavat_turku * (1-oireettomat) * (1-varma_koronaoire) / vakimaara_turku) / oireilevat_uri, 2)`).
+* Viemärivesinäytteen perusteella alueen koronataso on korkea ja testataan satunnaistettu otanta alueen väestöstä. Osuman todennäköisyys olettaen, että testataan kaupunginosittain ja rajana on 10 * Helsingin keskiarvo: `r signif(tartuttavat_helsinki/vakimaara_helsinki * 10,2)`.
+* Työpaikassa, hoitolaitoksessa tai muussa rajatussa väestössä todetaan koronatartuntoja, ja kaikki testataan. Osuman todennäköisyys vaihtelee, mutta voisi olla `r 3/200 # olettaen että löytyy 3 tapausta lisää 200 joukosta`.
+* Testataan satunnainen joukko asukkaita. Osuman todennäköisyys pääkaupunkiseudulla on `r signif(tartuttavat_helsinki/vakimaara_helsinki,2)`, muualla huomattavasti pienempi.
+
+Yllä arvioidut osumat todennäköisyydet kertovat kuitenkin vain, kuinka todennäköistä on löytää koronapositiivinen testatusta joukosta. Tämä on hyödyllistä tietää testaamisen suuntaamiseksi. Kuitenkin epidemian pysäyttämisen kannalta on tärkeämpää arvioida, millä todennäköisyydellä koronapositiivinen henkilö tunnistetaan (ja saadaan eristettyä).
+
+Tähän liittyy monia tuntemattomia tekijöitä. Esimerkiksi päätyykö tieto kansalliseen rekisteriin, jos ihminen tunnistaa itse varmat koronaoireet ja jää kotiin? Tai jos työterveyslääkäri tekee diagnoosin kliinisen kuvan perusteella mutta ei lähetä potilasta testiin? Näitä olisi mahdollista selvittää myös jälkikäteen, jos valtakunnallisesti pyydettäisiin kaikkia omasta mielestään koronan sairastaneita ottamaan yhteyttä sähköpostilla tiettyyn osoitteeseen.
+
+Jäljityksessä olennaista on, kuinka monta kontaktia kantaja osaa nimetä, millä todennäköisyydellä tartuttaja tunnistetaan ja miten nopeasti jäljitys etenee eli kuinka nopeasti ketjut saadaan katkaistua. Näistä tarvittaisiin lisätietoa.
+
+Ilmeisesti Suomessa on varsin kehnosti kerätty kansallista dataa jäljityksestä, koska vastuu on paikallistasolla. Myöskään kännykkäsovelluksen kertomista lisäkontaktien määrästä ei vielä ole kunnon tietoa.

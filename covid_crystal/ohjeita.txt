@@ -1,0 +1,24 @@
+## Ohjeita
+
+Linkkejä hyödyllisille sivuille
+http://fi.opasnet.org/fi/Koronavirus
+http://en.opasnet.org/w/Insight_network
+
+Asennettavia paketteja
+devtools::install_github("jtuomist/OpasnetUtils")
+gsheet
+DiagrammeR
+DiagrammeRsvg
+tidyverse
+
+Näkemysverkon taulukon sarakkeet:
+Context
+Item
+type
+label
+rel
+Object
+Description
+Reldescription
+URL
+

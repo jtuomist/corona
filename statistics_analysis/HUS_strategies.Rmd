@@ -1,0 +1,419 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 8
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r setup, echo=FALSE}
+
+# devtools::install_github("THLfi/thlGraphs") # Install if you don't have it already
+
+# The function is redefined here because a few changes are needed:
+### Y axis text should be shown vertically
+### legend title must be shown. Code removed from line 105
+
+thlTheme <- function (show.grid.y = TRUE, show.grid.x = FALSE, base.size = 16, 
+  basic.lwd = 3, legend.position = "none", horizontal = FALSE, 
+  x.axis.title = FALSE,
+  axis.title.y.angle = 90 # vertical text
+  ) 
+{
+  if (.Platform$OS.type == "windows") {
+    windowsFonts(ArialMT = windowsFont("ArialMT"))
+  }
+  font.family = "ArialMT"
+  if (isTRUE(show.grid.y & !horizontal)) {
+    panel.grid.major.y = element_line(colour = "#dcdfe2", 
+      size = thlPtsConvert(1))
+  }
+  else if (!horizontal) {
+    panel.grid.major.y = element_blank()
+  }
+  if (isTRUE(show.grid.x & !horizontal)) {
+    panel.grid.major.x = element_line(colour = "#dcdfe2", 
+      size = thlPtsConvert(0.75), linetype = 2)
+  }
+  else if (!horizontal) {
+    panel.grid.major.x = element_blank()
+  }
+  if (isTRUE(show.grid.y & horizontal)) {
+    panel.grid.major.x = element_line(colour = "#dcdfe2", 
+      size = thlPtsConvert(1))
+  }
+  else if (horizontal) {
+    panel.grid.major.x = element_blank()
+  }
+  if (isTRUE(show.grid.x & horizontal)) {
+    panel.grid.major.y = element_line(colour = "#dcdfe2", 
+      size = thlPtsConvert(0.75), linetype = 2)
+  }
+  else if (horizontal) {
+    panel.grid.major.y = element_blank()
+  }
+  if (horizontal) {
+    axis.title.x = element_text(angle = 0, size = 0.75 * 
+      base.size, family = font.family, colour = "#606060", 
+      hjust = 1, margin = margin(b = 10, t = 10))
+  }
+  if (isTRUE(x.axis.title)) {
+    axis.title.x = element_text(size = 0.75 * base.size, 
+      family = font.family, colour = "#606060")
+  }
+  else {
+    axis.title.x = element_blank()
+  }
+  if (horizontal) {
+    axis.line.y = element_line(size = thlPtsConvert(2), 
+      colour = "#606060", lineend = "butt")
+    axis.line.x = element_blank()
+  }
+  else {
+    axis.line.y = element_blank()
+    axis.line.x = element_line(size = thlPtsConvert(2), 
+      colour = "#606060", lineend = "butt")
+  }
+  if (horizontal) {
+    axis.text.y = element_text(size = 0.75 * base.size, 
+      family = font.family, colour = "#606060", face = "bold")
+  }
+  else {
+    axis.text.y = element_text(size = 0.625 * base.size, 
+      family = font.family, colour = "#606060")
+  }
+  if (horizontal) {
+    axis.text.x = element_text(size = 0.625 * base.size, 
+      family = font.family, colour = "#606060")
+  }
+  else {
+    axis.text.x = element_text(size = 0.625 * base.size, 
+      family = font.family, colour = "#606060", face = "bold")
+  }
+  if (horizontal) {
+    axis.title.y = element_blank()
+  }
+  else {
+    axis.title.y = element_text(angle = axis.title.y.angle, size = 0.75 * 
+      base.size, family = font.family, colour = "#606060", 
+      vjust = 1.05, margin = margin(b = 10, t = 10))
+  }
+  lwd <- thlPtsConvert(basic.lwd)
+  theme(legend.position = legend.position, # legend.title = element_blank(), 
+    legend.background = element_rect(fill = "white"), legend.key = element_blank(), 
+    legend.text = element_text(size = 0.625 * base.size, 
+      colour = "#606060"), line = element_line(size = basic.lwd), 
+    plot.title = element_text(colour = "#606060", face = 2, 
+      size = base.size, hjust = 0), plot.subtitle = element_text(colour = "#606060", 
+      size = 0.75 * base.size, hjust = 0), plot.caption = element_text(colour = "#606060", 
+      size = 0.625 * base.size, hjust = 1, vjust = 0, 
+      margin = margin(t = 10)), axis.title.x = axis.title.x, 
+    axis.line.x = axis.line.x, axis.line.y = axis.line.y, 
+    axis.title.y = axis.title.y, axis.text.y = axis.text.y, 
+    axis.text.x = axis.text.x, axis.ticks = element_blank(), 
+    panel.background = element_blank(), panel.grid.major.y = panel.grid.major.y, 
+    panel.grid.minor.y = element_blank(), panel.grid.major.x = panel.grid.major.x, 
+    panel.grid.minor.x = element_blank(), strip.background = element_rect(colour = "white", 
+      fill = "white"), strip.placement = "outside", strip.text = element_text(size = 0.625 * 
+      base.size, family = font.family, colour = "#606060"), 
+    text = element_text(family = font.family, colour = "#606060"), 
+    plot.margin = margin(t = 20, r = 20, b = 20, l = 15, 
+      unit = "pt"))
+}
+
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r preprocess, echo=FALSE}
+
+library(reshape2)
+library(ggplot2)
+library(thlGraphs) # See previous code for installation
+library(scales)
+
+Sys.setlocale("LC_TIME", "C")
+
+scen <- read.csv("coronameta_2020-04-07.csv")
+
+colour12 <- c(
+  "#a6cee3",
+  "#1f78b4",
+  "#b2df8a",
+  "#33a02c",
+  "#fb9a99",
+  "#e31a1c",
+  "#fdbf6f",
+  "#ff7f00",
+  "#cab2d6",
+  "#6a3d9a",
+  "#ffff99",
+  "#b15928"
+)
+
+linecolour <- colour12[5]
+
+if(TRUE) { # If TRUE, use preprocessed data.
+  # Download preprocessed simulation output data.
+  
+  unzip("reina_scenarios_csv.zip")
+  reina <- read.csv("reina_scenarios.csv")
+  file.remove("reina_scenarios.csv") # Only keep the zipped version in archive
+  
+  unzip("reina_parameter_runs_csv.zip")
+  out <- read.csv("reina_parameter_runs.csv")
+  file.remove("reina_parameter_runs.csv")
+
+  epicalc <- read.csv("epidemic_calculator_scenario_outputs.csv")
+  
+} else {
+  # Create simulation output data from original files downloaded from model.
+  
+  library(gsheet)
+  
+  reina <- rbind(
+    read.csv("~/Downloads/reina_default.csv"),
+    read.csv("~/Downloads/reina_hammer-and-dance.csv"),
+    read.csv("~/Downloads/reina_looser-restrictions-to-start-with.csv"),
+    read.csv("~/Downloads/reina_mitigation.csv"),
+    read.csv("~/Downloads/reina_summer-boogie.csv")
+  )
+
+  #levels(reina$scenario)
+  #[1] "default"                           "hammer-and-dance"                 
+  #[3] "looser-restrictions-to-start-with" "mitigation"                       
+  #[5] "summer-boogie"                    
+
+  levels(reina$scenario) <- c(
+    "current restrictions",
+    "suppression",
+    "Swedish path",
+    "mitigation",
+    "summer boogie"
+  )
+  
+  # Save output results of the five preselected scenarios.
+  
+  write.csv(reina, "reina_scenarios.csv")
+  zip("reina_scenarios_csv.zip", "reina_scenarios.csv")
+  file.remove("reina_scenarios.csv")
+  
+  if(TRUE) {
+  nam <- paste(scen$X, scen$Restriction, scen$Testing, scen$Asymptomatic, scen$Infectivity, sep="-")
+  nam[grepl("^\\d-",nam)] <- paste0("0", nam[grepl("^\\d-",nam)])
+  
+  out <- data.frame()
+  for(i in 1:length(nam)) {
+    out <- rbind(out, merge(
+      read.csv(paste0("~/Downloads/", nam[i], ".csv")),
+      scen[i , ! colnames(scen) %in% c("X","Use","Description")]
+    ))
+    cat(i," ")
+  }
+  colnames(out)[colnames(out)=="X"] <- "date"
+
+  write.csv(out, "reina_parameter_runs.csv")
+  zip("reina_parameter_runs_csv.zip",
+      "reina_parameter_runs.csv")
+  file.remove("reina_parameter_runs.csv")
+  }
+  ### Download the Epidemic Calculator simulation data
+  
+  epicalc <- gsheet2tbl("https://docs.google.com/spreadsheets/d/1k99lsiDR1OnUq5Va7_dOVIM_GFYS4c7ReVNkPL2Vxc8/edit#gid=946848081")
+  epicalc$Restriction <- as.numeric(gsub("%","",epicalc$Restriction))/100
+
+  write.csv(epicalc, "epidemic_calculator_scenario_outputs.csv")
+
+}
+
+reina$date <- as.Date(reina$date)
+reina <- melt(reina, id.vars = c("date","run","scenario"))
+
+out$date <- as.Date(out$date)
+out <- melt(out, id.vars = c("date","Restriction","Testing","Asymptomatic","Infectivity"))
+out$Testing <- factor(out$Testing, levels=c("Lazy","Active","Aggressive"))
+out$variable <- factor(out$variable, levels = c(
+  "recovered","all_infected","infected", "susceptible", "all_detected", "dead", "hospitalized","in_icu",
+  "exposed_per_day","available_hospital_beds","available_icu_units","total_icu_units","tests_run_per_day",
+  "cfr","ifr","r","X","mobility_limitation","us_per_infected"
+))
+out$Strategy <- ifelse(out$Restriction==0.41,
+                       ifelse(out$Testing=="Lazy","Mitigation",
+                       ifelse(out$Testing=="Aggressive","Suppression","Other")),
+                       "Other")
+out$Strategy <- factor(out$Strategy, levels=c("Mitigation","Suppression","Other"))
+
+nums = c("dead","recovered")
+
+```
+
+```{r figures}
+
+## Generic testing protocol to remove sensitivity analyses from data and set date for examination
+
+tst0 <- out$Asymptomatic==0.5 & out$Infectivity==0.28 & out$value > 1 #  & !is.na(out$Restriction)
+
+target <- min(as.Date("2020-04-06")+360, max(out$date))
+
+cat("The target date is", as.character(target), ", which is", target - as.Date("2020-04-06"), "days after the strategy implementation started")
+
+###### FIGURE 4
+
+tst <- tst0 & out$Testing=="Lazy" & out$variable=="infected" & out$Restriction!=0.41 # Mitigation strategy, infected only
+
+ggplot(out[tst,], 
+       aes(x=date, y=value, colour=as.character(Restriction)))+geom_line()+
+  scale_y_log10(labels=comma)+
+  labs(
+    title="COVID-19 epidemic scenarios with lazy testing",
+    y="Number of infectious people")+
+  thlTheme(show.grid.x=TRUE, legend.position="bottom")+
+  scale_colour_manual(name="Mobility restriction", values=colour12)
+
+### FIGURE 5
+
+tmp <- out[tst0 & out$date==target & out$Restriction %in% c(0.1,0.6,0.8) & out$variable=="recovered",]
+tmp$value <- tmp$value/1667203
+tmp
+
+out[tst0 & out$date==target & out$Restriction %in% c(0,0.1,0.41,0.6,0.8) & out$variable %in% nums,]
+
+ggplot(out[tst0 & out$date==target & out$variable %in% nums ,],
+       aes(x=Restriction,y=value, colour=variable, linetype=Testing))+geom_line()+
+  scale_y_log10(labels=comma)+
+  labs(
+    title="COVID-19 scenarios: restrictions and testing",
+    x="Mobility restrictions (reduction from normal)",
+    y="Cumulative number of patients after 180 days"
+  )+
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="right")
+
+## ADDITIONAL GRAPH (NOT USED IN THE MANUSCRIPT)
+
+ggplot(out[tst0 & out$Testing=="Lazy" & out$variable=="dead",], 
+       aes(x=date, y=value, colour=as.character(Restriction)))+geom_line()+
+  scale_y_log10(labels=comma)+
+  labs(y="Cumulative number of deaths")+
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
+
+### FIGURE 6. 
+
+tmp <- out[tst0 & out$Restriction==0.41 & out$variable %in% c(nums,"infected"), ]
+aggregate(tmp$value, by=tmp[c("Restriction","variable", "Testing")],FUN=max)           
+
+ggplot(tmp, aes(x=date, y=value, colour=variable, linetype=Testing))+geom_line()+
+  scale_y_log10(labels=comma)+
+  labs(
+    title="Epidemic timelines with different policies",
+    y="Number of patients",
+    x="Date"
+  )+
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
+
+# NOT USED IN THIS MANUSCRIPT! agent-based and Epidemic Calculator comparison
+
+tmp <- epicalc[epicalc$initial_seed==1200 , c("Restriction","recovered","dead")]
+tmp <- melt(tmp, id.vars="Restriction")
+
+tmp <- rbind(
+  cbind(tmp, Model="Epidemic Calculator"),
+  cbind(out[tst0 & out$date==target & out$Testing=="Lazy" & out$variable %in% 
+            nums , c("Restriction","variable","value")],
+        Model="Agent-based"
+  )
+)
+ggplot(tmp, aes(x=Restriction, y=value, colour=variable, linetype=Model))+geom_line()+
+  scale_y_log10(labels=comma)+
+  geom_vline(xintercept=0.41, colour=linecolour)+
+  labs(
+    title="Agent-based model vs Epidemic Calculator",
+    y="Cumulative number of cases after 180 days",
+    x="Mobility restriction"
+  )+
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="bottom")
+
+### FIGUREs 7 and 8 are from the official scenario code below
+
+#### Figure 9.
+
+ggplot(out[out$Restriction==0.41 & out$Infectivity==0.28 & out$Testing!="Active" & out$date==target &out$variable %in% nums,],
+       aes(x= Asymptomatic, y=value, colour=variable, linetype=Testing))+geom_line()+
+  geom_vline(xintercept=0.5, colour=linecolour)+
+  scale_y_log10(labels=comma)+
+  labs(
+    title="Sensitivity analysis: asymptomatic patients",
+    y="Cumulative number of cases after 180 days",
+    x="Fraction of asymptomatic cases among all diseased"
+  )+
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="right")
+
+#### FIGURE 10
+
+ggplot(out[out$Restriction==0.41 & out$Asymptomatic==0.5 & out$Testing!="Active" & out$date==target &out$variable %in% nums,],
+       aes(x= Infectivity, y=value, colour=variable, linetype=Testing))+geom_line()+
+  geom_vline(xintercept=0.28, colour=linecolour)+
+  scale_y_log10(labels=comma)+
+  labs(
+    title="Sensitivity analysis: Infectivity",
+    y="Cumulative number of cases after 180 days",
+    x="Probability of infection given virus contact"
+  )+
+  thlTheme(show.grid.x=TRUE, x.axis.title=TRUE, legend.position="right")
+
+
+################# FIGURES FOR THE OFFICIAL SCENARIOS
+#### FIGURES 7, 8
+#### FIGURES S-1, S-2, S-3
+
+tmp <- reina 
+
+tmp <- rbind(
+  cbind(
+    Parameter = "lower",
+    aggregate(tmp[c("value")], by = tmp[c("date","scenario","variable")], FUN=function(x) quantile(x, 0.025))
+  ),
+  cbind(
+    Parameter = "upper",
+        aggregate(tmp[c("value")], by = tmp[c("date","scenario","variable")], FUN=function(x) quantile(x, 0.975))
+  ),
+  cbind(
+    Parameter = "mean",
+        aggregate(tmp[c("value")], by = tmp[c("date","scenario","variable")], FUN=mean)
+  )
+)
+
+tmp$value <- pmax(1, tmp$value)
+
+tmp <- reshape(tmp, timevar = "Parameter", v.names = "value", idvar=c("date","scenario","variable"), direction="wide")
+
+tmp[tmp$date==target,]
+
+rdi <- data.frame(scenario = c(
+  "current restrictions", "suppression", "Swedish path","mitigation","summer boogie"),
+  RDI = c(166, 72, 83, 111, 110))
+
+tmp <- tmp[tmp$variable %in% c("infected","dead","hospitalized"),]
+  
+for(i in unique(tmp$scenario)) {
+print(ggplot(data=tmp[tmp$scenario==i,], aes(x=date, colour = variable, fill=variable, y=value.mean, ymin=value.lower, ymax=value.upper))+geom_ribbon(colour="white",alpha=0.1)+geom_line()+
+  scale_y_log10(labels=comma)+
+  thlTheme(show.grid.x =TRUE, legend.position = "bottom")+
+  coord_cartesian(ylim=c(9,100000))+
+  labs(
+    title = paste("Scenario:", i),
+    subtitle=paste("Restriction day index:", rdi$RDI[rdi$scenario==i]),
+    y = "Number of cases (mean, 95 % CI)"
+  ))
+}
+
+
+```

@@ -206,3 +206,10 @@ render_graph(gr, title=df[[1]])
 # The correlation between inference with truth/relevance classification and that without is not great.
 # However, it is reasonable for very high and very low values.
 # So, let's try to analyze a large amount of discussions with truth-only setting
+
+##################
+
+dt <- gsheet::gsheet2tbl("https://docs.google.com/spreadsheets/d/1eMMwHV1sD9DvCsnYAoESt8EV5US21mGXRZF7HR-myvA/edit#gid=0")
+gr <- makeGraph(dt)
+render_graph(gr)
+

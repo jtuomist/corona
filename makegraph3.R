@@ -15,7 +15,7 @@ makeGraph <- function(ova, formatting=data.frame(), ...) {
   require(OpasnetUtils)
   require(RCy3)
 
-  if(TRUE) { # Maybe not needed  
+  if(FALSE) { # Maybe not needed  
     if(!exists("formatted")) formatted <- data.frame()
     if(nrow(formatted)==0) {
       objects.latest("Op_en3861", code_name="formatted") # [[Insight network]] formatted
@@ -74,9 +74,9 @@ makeGraph <- function(ova, formatting=data.frame(), ...) {
   #  )
   nodes$tooltip <- paste0(
     nodes$Item, ". ", nodes$Description, "/ truth: ", nodes$truth, " relevance: ", nodes$relevance)
-  nodes <- merge(nodes, formatted[setdiff(colnames(formatted),colnames(nodes))],
-                 by.x="type", by.y="Resource")
-  colnames(nodes) <- gsub("node.","",colnames(nodes))
+  #nodes <- merge(nodes, formatted[setdiff(colnames(formatted),colnames(nodes))],
+  #               by.x="type", by.y="Resource")
+  #colnames(nodes) <- gsub("node.","",colnames(nodes))
   nodes <- nodes[!grepl("edge.", colnames(nodes))]
   nodes$id <- 1:nrow(nodes)
   
@@ -91,16 +91,18 @@ makeGraph <- function(ova, formatting=data.frame(), ...) {
   )
   
   edges <- a[!(is.na(a$Object) | a$Object=="") , ]
-  flip <- edges$rel %in% inve$inve
-  tmp <- edges$Item
-  edges$Item[flip] <- edges$Object[flip]
-  edges$Object[flip] <- tmp[flip]
-  edges$rel[flip] <- inve$rel[match(edges$rel, inve$inve)][flip]
-  edges$from <- match(edges$Item, nodes$Item)
-  edges$to <- match(edges$Object, nodes$Item)
+# Disable flipping for now
+#  flip <- edges$rel %in% inve$inve
+#  tmp <- edges$Item
+#  edges$Item[flip] <- edges$Object[flip]
+#  edges$Object[flip] <- tmp[flip]
+#  edges$rel[flip] <- inve$rel[match(edges$rel, inve$inve)][flip]
+
+#  edges$from <- match(edges$Item, nodes$Item)
+#  edges$to <- match(edges$Object, nodes$Item)
   edges$label <- edges$rel
-  edges <- merge(edges, formatted[setdiff(colnames(formatted),colnames(edges))],
-                 by.x="rel", by.y="Resource", all.x = TRUE)
+#  edges <- merge(edges, formatted[setdiff(colnames(formatted),colnames(edges))],
+#                 by.x="rel", by.y="Resource", all.x = TRUE)
   colnames(edges) <- gsub("edge.","",colnames(edges))
   edges <- edges[!grepl("node.", colnames(edges))]
   edges$id <- 1:nrow(edges)

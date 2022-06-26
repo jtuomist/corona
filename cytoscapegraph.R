@@ -3,32 +3,40 @@
 library(RCy3)
 library(gsheet)
 
-df <- gsheet2tbl("https://docs.google.com/spreadsheets/d/1eMMwHV1sD9DvCsnYAoESt8EV5US21mGXRZF7HR-myvA/edit#gid=1340914666")
+#df <- gsheet2tbl("https://docs.google.com/spreadsheets/d/1eMMwHV1sD9DvCsnYAoESt8EV5US21mGXRZF7HR-myvA/edit#gid=1340914666")
+df <- gsheet2tbl("https://docs.google.com/spreadsheets/d/1eMMwHV1sD9DvCsnYAoESt8EV5US21mGXRZF7HR-myvA/edit#gid=0")
 
 gr <- makeGraph(df)
 
-gr$nodes_df$score <- as.integer(gr$nodes_df$score) * 10
+gr$nodes_df$score <- as.integer(as.numeric(gr$nodes_df$score) * 10)
 gr$edges_df$weight <- as.numeric(gr$edges_df$weight)
+nodes <- (gr$nodes_df)
+edges <- (gr$edges_df)
+
+setdiff(
+  unique(c(edges$target)),
+  unique(nodes$id)
+)
 createNetworkFromDataFrames(
-  gr$nodes_df,
-  gr$edges_df,
+  nodes,
+  edges,
   title="Insight network",
   collection="DataFrame Example")
 
-cytoscapePing ()
-cytoscapeVersionInfo ()
+#cytoscapePing ()
+#cytoscapeVersionInfo ()
 
-nodes <- data.frame(id=c("node 0","node 1","node 2","node 3"),
-                    group=c("A","A","B","B"), # categorical strings
-                    score=as.integer(c(20,10,15,5)), # integers
-                    stringsAsFactors=FALSE)
-edges <- data.frame(source=c("node 0","node 0","node 0","node 2"),
-                    target=c("node 1","node 2","node 3","node 3"),
-                    interaction=c("inhibits","interacts","activates","interacts"),  # optional
-                    weight=c(5.1,3.0,5.2,9.9), # numeric
-                    stringsAsFactors=FALSE)
+#nodes <- data.frame(id=c("node 0","node 1","node 2","node 3"),
+#                    group=c("A","A","B","B"), # categorical strings
+#                    score=as.integer(c(20,10,15,5)), # integers
+#                    stringsAsFactors=FALSE)
+#edges <- data.frame(source=c("node 0","node 0","node 0","node 2"),
+#                    target=c("node 1","node 2","node 3","node 3"),
+#                    interaction=c("inhibits","interacts","activates","interacts"),  # optional
+#                    weight=c(5.1,3.0,5.2,9.9), # numeric
+#                    stringsAsFactors=FALSE)
 
-createNetworkFromDataFrames(nodes,edges, title="my first network", collection="DataFrame Example")
+#createNetworkFromDataFrames(nodes,edges, title="my first network", collection="DataFrame Example")
 
 setVisualStyle('Marquee')
 

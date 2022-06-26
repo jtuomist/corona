@@ -7,8 +7,9 @@ http://en.opasnet.org/w/Insight_network
 Asennettavia paketteja
 devtools::install_github("jtuomist/OpasnetUtils")
 gsheet
-DiagrammeR
-DiagrammeRsvg
+DiagrammeR (depreciated)
+DiagrammeRsvg (deprecieated)
+RCy3
 tidyverse
 
 Näkemysverkon taulukon sarakkeet:
@@ -22,3 +23,15 @@ Description
 Reldescription
 URL
 
+RCy3-taulukoiden sarakkeet:
+
+nodes:
+id
+group
+score
+
+edges:
+source
+target
+interaction
+weight

@@ -5,7 +5,7 @@ library(tidyverse)
 
 # First version of data https://docs.google.com/spreadsheets/d/1Wzj_VqubkV6uomQS-St5UxzS5k25dDBs15DQFEsroOg/edit#gid=0
 
-objects.latest("Op_en3861", code_name="makeGraph2") # [[Insight network]] makeGraph
+# objects.latest("Op_en3861", code_name="makeGraph2") # [[Insight network]] makeGraph  # OLD VERSION
 objects.latest("Op_en2382", code_name="update") # [[Discussion]] update_truth, update_relevance, infer_tree
 
 preprocess_arguments <- function(
@@ -90,9 +90,9 @@ prepare_graph <- function(
   return(df)
 }
 
-if (!exists("formatted")) {
-  objects.latest("Op_en3861", code_name = "formatted")
-}
+#if (!exists("formatted")) {
+#  objects.latest("Op_en3861", code_name = "formatted")
+#}
 if (!exists("chooseGr")) {
   objects.latest("Op_en3861", code_name = "chooseGr")
 }
@@ -194,7 +194,7 @@ df <- prepare_graph(
 gr <- makeGraph(
   ova=df,
   formatted=formatted)
-render_graph(gr, title=df[[1]])
+#render_graph(gr, title=df[[1]])  DiagrammeR version
 
 #export_graph(gr, "~/home/jouni/Documents/Koronakide.svg")
 

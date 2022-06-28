@@ -168,7 +168,7 @@ relevants <- strsplit(relevants, split="\n")[[1]]
 addition <- opasnet.data("4/44/Covid-19_discussions.zip", wiki="op_fi", unzip="should-covid-19-vaccines-be-mandatory-39517_addition.txt")
 addition <- strsplit(addition, split="\n")[[1]]
 
-df <- preprocess_arguments(
+l <- preprocess_arguments(
   #  file_path =  "7/74/Climate_discussions.zip",
   #  file_name = file_list_climate[43],
   #  relevants = NA,#relevants, # NA for all others except discussion #11 Should COVID-19 vaccines be mandatory?
@@ -183,14 +183,16 @@ df <- preprocess_arguments(
   sensitivity_prime_attack = -0.5
 )
 
+df <- prepare_graph(
+  df=infer_tree(l[[2]], verbose=FALSE),
+  drop_gray = TRUE,
+  drop_higher_levels = 2,
+  TRUTH_LIMIT = 0.1,
+  RELEVANCE_LIMIT = 0.2,
+  verbose=FALSE
+)
 gr <- makeGraph(
-  ova=prepare_graph(
-    df=infer_tree(df[[2]], verbose=FALSE),
-    drop_gray = TRUE,
-    drop_higher_levels = 2,
-    TRUTH_LIMIT = 0.1,
-    RELEVANCE_LIMIT = 0.2,
-    verbose=FALSE),
+  ova=df,
   formatted=formatted)
 render_graph(gr, title=df[[1]])
 

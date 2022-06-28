@@ -117,8 +117,8 @@ makeGraph <- function(ova, formatting=data.frame(), ...) {
   colnames(edges)[colnames(edges)=="label"] <- "name"
   colnames(edges)[colnames(edges)=="relevance"] <- "weight"
   
-  nodes <- nodes[c("id","group","score")]
-  edges <- edges[c("source","target","interaction","weight")]
+#  nodes <- nodes[c("id","group","score")]
+#  edges <- edges[c("source","target","interaction","weight")]
   
   gr <- list(
     nodes_df=nodes,

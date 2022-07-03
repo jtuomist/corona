@@ -1,5 +1,10 @@
 # https://bioconductor.org/packages/release/bioc/vignettes/RCy3/inst/doc/Overview-of-RCy3.html
 
+# These tools may become handy in developing graphs and counting # of traversals.
+# https://github.com/danilnagy/gd_tools
+# https://en.m.wikipedia.org/wiki/Dijkstra's_algorithm
+# May work for selecting preferred path when distance is assumed to be lack of explanatory power.
+
 library(RCy3)
 library(gsheet)
 
@@ -43,6 +48,8 @@ defaults <- list(
 # See https://js.cytoscape.org/#style for different possible styles
 # NOTE! Every time you create a new style with a same name, it will be renamed name_1, name_2 etc
 
+
+
 node_color <- t(matrix(c(
   'default', 'brown',
   'unknown', 'green',
@@ -65,6 +72,7 @@ node_fillcolor <- t(matrix(c(
   'default', 'white',
   'unknown', 'yellow',
   'substance', 'skyblue2',
+  'muuttuja', 'skyblue2',
   'option', 'white',
   'index', 'purple1',
   'graph', 'pink',
@@ -73,6 +81,7 @@ node_fillcolor <- t(matrix(c(
   'method', 'purple1',
   'process', 'purple1',
   'action', '#009246',
+  'toimenpide', '#009246',
   'decision', 'red',
   'data', 'gold',
   'objective', 'yellow',
@@ -80,6 +89,8 @@ node_fillcolor <- t(matrix(c(
   'true statement', 'gold',
   'false statement', 'grey',
   'fact opening statement', 'lightskyblue1',
+  'faktaväite', 'lightskyblue1',
+  'arvoväite', 'palegreen1',
   'value opening statement', 'palegreen1',
   'fact closing statement', 'skyblue',
   'value closing statement', 'springgreen',
@@ -88,11 +99,13 @@ node_fillcolor <- t(matrix(c(
   'indicator', 'gold',
   'operational indicator', '#00d7a7',
   'tactical indicator', '#9fc9eb',
-  'strategic indicator', '#0072c6'), nrow=2))
+  'strategic indicator', '#0072c6',
+  'strateginen mittari', '#0072c6'), nrow=2))
 
 node_shape <- t(matrix(c(
   'default', 'circle',
   'substance', 'circle',
+  'muuttuja', 'circle',
   'index', 'parallelogram',
   'graph', 'triangle',
   'assessment', 'octagon',
@@ -100,12 +113,17 @@ node_shape <- t(matrix(c(
   'method', 'hexagon',
   'process', 'pentagon',
   'action', 'rectangle',
+  'toimenpide', 'rectangle',
   'data', 'rectangle',
   'objective', 'diamond',
-  'statement', 'round-triangle',
+  'statement', 'round triangle',
+  'arvoväite', 'triangle',
+  'faktaväite', 'round triangle',
   'strategic indicator', 'diamond',
+  'strateginen mittari', 'diamond',
   'fact opening statement', 'round-rectangle',
-  'argument', 'circle'
+  'argument', 'circle',
+  'argumentti', 'circle'
 ), nrow=2))
 
 edge_shape <- t(matrix(c(
@@ -119,6 +137,7 @@ edge_shape <- t(matrix(c(
   'lisää', 'Arrow',
   'vähentää', 'Arrow',
   'puolustaa', 'Arrow',
+  'vaikuttaa', 'Arrow',
   'vastustaa', 'T',
   'on osana', 'square'
 ), nrow=2))
@@ -161,49 +180,18 @@ edge_type <- t(matrix(c(  # FIXME not affecting outcome
 createVisualStyle(style.name, defaults, list(
   mapVisualProperty('node label','label','passthrough'),
   mapVisualProperty('node tooltip', 'tooltip', 'passthrough'),
-##  mapVisualProperty('node paint', 'group', 'discrete', node_color[,1], node_color[,2]  # From Opasnet / Insight network
-#  mapVisualProperty('node fill color', 'node.fillcolor', 'discrete', node_fillcolor[,1], node_fillcolor[,2]),
-#    'default', 'unknown', 'substance', 'option', 'index', 'graph', 'assessment', 'stakeholder', 'method',
-#    'process', 'action', 'decision', 'data', 'objective', 'publication', 'true statement', 'false statement',
-#    'fact opening statement', 'value opening statement', 'fact closing statement', 'value closing statement',
-#    'fact discussion', 'value discussion', 'indicator', 'operational indicator', 'tactical indicator',
-#    'strategic indicator'), c(
-#      'white', 'yellow', 'skyblue2', 'white', 'purple1', 'pink', 'purple1', 'khaki1', 'purple1', 'purple1',
-#      '#009246', 'red', 'gold', 'yellow', 'gray', 'gold', 'gray', 'lightskyblue1', 'palegreen1', 'skyblue',
-#      'springgreen', 'skyblue', 'springgreen', 'gold', '#00d7a7', '#9fc9eb', '#0072c6')),
-  mapVisualProperty('node fill color','node.fillcolor','passthrough'),
-  mapVisualProperty('node border paint', 'node.color', 'passthrough'),
+#  mapVisualProperty('node color', 'group', 'discrete', node_color[,1], node_color[,2]),  # From Opasnet / Insight network
+#  mapVisualProperty('node fill color','node.fillcolor','passthrough'),
+  mapVisualProperty('node fill color', 'group', 'd', node_fillcolor[,1], node_fillcolor[,2]),
   mapVisualProperty('node shape', 'group', 'discrete', node_shape[,1], node_shape[,2]),
-#    'default', 'substance', 'index', 'graph', 'assessment', 'stakeholder', 'method', 'process', 'action', 
-#    'data', 'objective', 'statement', 'strategic indicator', 'fact opening statement', 'argument'), c(
-#      'circle', 'circle', 'parallelogram', 'triangle', 'octagon', 'hexagon', 'hexagon', 'pentagon', 'rectangle', 
-#      'rectangle', 'diamond', 'round-triangle', 'diamond', 'round-rectangle', 'circle')),
-#  mapVisualProperty('node size', 'node.width', 'continuous', c(0,1), c(1,10)),
   mapVisualProperty('node label font size', 'node.fontsize', 'passthrough'),
 
   mapVisualProperty('edge label', 'interaction', 'passthrough'),
   mapVisualProperty('edge target arrow shape', 'interaction', 'discrete', edge_shape[,1], edge_shape[,2]),
-#    "activates","inhibits","interacts", "relevant attack", "relevant defense", "irrelevant attack", "irrelevant defense",
-#    'lisää', 'vähentää', 'puolustaa', 'vastustaa', 'on osana'),
-#    c("Arrow","T","None", "T", "Arrow", "T", "Arrow",
-#      'Arrow', 'Arrow', 'Arrow', 'T', 'square')),
   mapVisualProperty('edge width', 'penwidth', 'passthrough'),
-#  mapVisualProperty('edge paint', 'name', 'discrete', c(  # From Opasnet / Insight network
-#    'default', 'causal link', 'participatory link', 'operational link', 'evaluative link', 
-#    'relevant attack', 'relevant defense', 'relevant comment', 'irrelevant argument', 'referential link'), c(
-#      'grey', 'black', 'purple', 'black', 'green', 'red', 'green', 'blue', 'gray', 'red')),
   mapVisualProperty('edge stroke unselected paint', 'interaction', 'discrete', edge_color[,1], edge_color[,2]),
-#    "activates","inhibits","interacts", "relevant attack", "relevant defense", "irrelevant attack", "irrelevant defense",
-#    'lisää', 'vähentää', 'puolustaa', 'vastustaa', 'on osana'),
-#    c("black","red","black", "red", "green", "gray", "gray",
-#      'green', 'red', 'green', 'red', 'black')),
   mapVisualProperty('edge label color', 'colour', 'discrete', edge_labelcolor[,1], edge_labelcolor[,2]),
-#    'default', 'positive causal link', 'increases', 'negative causal link', 'decreases', 'part_of'), c(
-#      'grey', '#009246', '#009246', '#bd2719', '#bd2719', 'gray')),
   mapVisualProperty('edge width', 'penwidth', 'passthrough'),
   mapVisualProperty('edge line type', 'type', 'discrete', edge_type[,1], edge_type[,2])
-#    'default', 'causal link', 'participatory link', 'operational link', 'argumentative link', 'referential link',
-#    'argument', 'fact opening statement'), c(
-#      'Dots', 'Solid', 'Dash', 'Dash', 'Dots', 'Dash', 'Dots', 'Solid'))  # FIXME not affecting outcome
 ))
 setVisualStyle(style.name)

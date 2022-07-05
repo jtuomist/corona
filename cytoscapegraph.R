@@ -38,6 +38,8 @@ defaults <- list(
   NODE_BORDER_WIDTH=5,
   NODE_BORDER_PAINT="brown",
   NODE_FILL_COLOR="white",
+  NODE_WIDTH=50,
+  NODE_HEIGHT=50,
   EDGE_STROKE_UNSELECTED_PAINT="grey",
   EDGE_LABEL_COLOR="grey",
   EDGE_TARGET_ARROW_SHAPE="triangle",
@@ -48,82 +50,90 @@ defaults <- list(
 # See https://js.cytoscape.org/#style for different possible styles
 # NOTE! Every time you create a new style with a same name, it will be renamed name_1, name_2 etc
 
-
-
-node_color <- t(matrix(c(
-  'default', 'brown',
-  'unknown', 'green',
-  'knowledge crystal', 'gold',
-  'option', 'palevioletred',
-  'task 1', 'brown',
-  'task 2', 'yellow',
-  'task 3', 'blue',
-  'task 4', 'green',
-  'task 5', 'red',
-  'risk factor', 'pink',
-  'indicator', 'brown',
-  'arviointikriteeri', 'orange',
-  'task', 'green',
-  'data', 'orange',
-  'health organisation', 'yellow'
-), nrow=2))
-
-node_fillcolor <- t(matrix(c(
-  'default', 'white',
-  'unknown', 'yellow',
-  'substance', 'skyblue2',
-  'muuttuja', 'skyblue2',
-  'option', 'white',
-  'index', 'purple1',
-  'graph', 'pink',
-  'assessment', 'purple1',
-  'stakeholder', 'khaki1',
-  'method', 'purple1',
-  'process', 'purple1',
-  'action', '#009246',
-  'toimenpide', '#009246',
-  'decision', 'red',
-  'data', 'gold',
-  'objective', 'yellow',
-  'publication', 'grey',
-  'true statement', 'gold',
-  'false statement', 'grey',
-  'fact opening statement', 'lightskyblue1',
-  'faktaväite', 'lightskyblue1',
-  'arvoväite', 'palegreen1',
-  'value opening statement', 'palegreen1',
-  'fact closing statement', 'skyblue',
-  'value closing statement', 'springgreen',
-  'fact discussion', 'skyblue',
-  'value discussion', 'springgreen',
-  'indicator', 'gold',
-  'operational indicator', '#00d7a7',
-  'tactical indicator', '#9fc9eb',
-  'strategic indicator', '#0072c6',
-  'strateginen mittari', '#0072c6'), nrow=2))
-
-node_shape <- t(matrix(c(
+node_shape <- t(matrix(c(  # node type
   'default', 'circle',
   'substance', 'circle',
-  'muuttuja', 'circle',
+  'muuttuja', 'ellipse',
   'index', 'parallelogram',
   'graph', 'triangle',
   'assessment', 'octagon',
   'stakeholder', 'hexagon',
+  'kansalainen', 'hexagon',
   'method', 'hexagon',
   'process', 'pentagon',
   'action', 'rectangle',
   'toimenpide', 'rectangle',
   'data', 'rectangle',
   'objective', 'diamond',
-  'statement', 'round triangle',
+  'statement', 'triangle',
   'arvoväite', 'triangle',
-  'faktaväite', 'round triangle',
+  'faktaväite', 'triangle',
   'strategic indicator', 'diamond',
   'strateginen mittari', 'diamond',
   'fact opening statement', 'round-rectangle',
-  'argument', 'circle',
-  'argumentti', 'circle'
+  'argument', 'triangle',
+  'argumentti', 'triangle'
+), nrow=2))
+
+node_width <- t(matrix(c(  # node type
+  'default', 40,
+  'stakeholder', 80,
+  'kansalainen', 80,
+  'arvoväite', 65,
+  'faktaväite', 65,
+  'fact opening statement', 65,
+  'argument', 65,
+  'argumentti', 65
+), nrow=2))
+
+node_color <- t(matrix(c(
+  'default', 'brown',
+  'unknown', 'green',
+  'knowledge crystal', 'gold',
+  'option', 'palevioletred',
+  'risk factor', 'pink',
+  'indicator', 'brown',
+  'arviointikriteeri', 'orange',
+  'task', 'green',
+  'data', 'orange',
+  'health organisation', 'yellow',
+  'arvoväite', 'green',
+  'faktaväite', 'blue'
+), nrow=2))
+
+node_fillcolor <- t(matrix(c(
+  'default', 'white',
+  'unknown', 'yellow'
+#  'substance', 'skyblue2',
+#  'muuttuja', 'skyblue2',
+#  'option', 'white',
+#  'index', 'purple1',
+#  'graph', 'pink',
+#  'assessment', 'purple1',
+#  'stakeholder', 'khaki1',
+#  'method', 'purple1',
+#  'process', 'purple1',
+#  'action', '#009246',
+#  'toimenpide', '#009246',
+#  'decision', 'red',
+#  'data', 'gold',
+#  'objective', 'yellow',
+#  'publication', 'grey',
+#  'true statement', 'gold',
+#  'false statement', 'grey',
+#  'fact opening statement', 'lightskyblue1',
+#  'faktaväite', 'lightskyblue1',
+#  'arvoväite', 'palegreen1',
+#  'value opening statement', 'palegreen1',
+#  'fact closing statement', 'skyblue',
+#  'value closing statement', 'springgreen',
+#  'fact discussion', 'skyblue',
+#  'value discussion', 'springgreen',
+#  'indicator', 'gold',
+#  'operational indicator', '#00d7a7',
+#  'tactical indicator', '#9fc9eb',
+#  'strategic indicator', '#0072c6',
+#  'strateginen mittari', '#0072c6'
 ), nrow=2))
 
 edge_shape <- t(matrix(c(
@@ -137,8 +147,10 @@ edge_shape <- t(matrix(c(
   'lisää', 'Arrow',
   'vähentää', 'Arrow',
   'puolustaa', 'Arrow',
+  'puolustaa relevanssia', 'square',
   'vaikuttaa', 'Arrow',
   'vastustaa', 'T',
+  'vastustaa relevanssia', 'square',
   'on osana', 'square'
 ), nrow=2))
 
@@ -153,7 +165,9 @@ edge_color <- t(matrix(c(
   'lisää', 'green',
   'vähentää', 'red',
   'puolustaa', 'green',
+  'puolustaa relevanssia', 'green',
   'vastustaa', 'red',
+  'vastustaa relevanssia', 'red',
   'on osana', 'black'
 ), nrow=2))
 
@@ -180,10 +194,11 @@ edge_type <- t(matrix(c(  # FIXME not affecting outcome
 createVisualStyle(style.name, defaults, list(
   mapVisualProperty('node label','label','passthrough'),
   mapVisualProperty('node tooltip', 'tooltip', 'passthrough'),
-#  mapVisualProperty('node color', 'group', 'discrete', node_color[,1], node_color[,2]),  # From Opasnet / Insight network
+  mapVisualProperty('node border paint', 'group', 'discrete', node_color[,1], node_color[,2]),  # From Opasnet / Insight network
 #  mapVisualProperty('node fill color','node.fillcolor','passthrough'),
   mapVisualProperty('node fill color', 'group', 'd', node_fillcolor[,1], node_fillcolor[,2]),
   mapVisualProperty('node shape', 'group', 'discrete', node_shape[,1], node_shape[,2]),
+  mapVisualProperty('node width', 'group', 'discrete', node_width[,1], node_width[,2]),
   mapVisualProperty('node label font size', 'node.fontsize', 'passthrough'),
 
   mapVisualProperty('edge label', 'interaction', 'passthrough'),

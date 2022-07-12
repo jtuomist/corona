@@ -199,14 +199,13 @@ createVisualStyle(style.name, defaults, list(
   mapVisualProperty('node fill color', 'group', 'd', node_fillcolor[,1], node_fillcolor[,2]),
   mapVisualProperty('node shape', 'group', 'discrete', node_shape[,1], node_shape[,2]),
   mapVisualProperty('node width', 'group', 'discrete', node_width[,1], node_width[,2]),
-  mapVisualProperty('node label font size', 'node.fontsize', 'passthrough'),
+#  mapVisualProperty('node label font size', 'node.fontsize', 'passthrough'),
 
   mapVisualProperty('edge label', 'interaction', 'passthrough'),
   mapVisualProperty('edge target arrow shape', 'interaction', 'discrete', edge_shape[,1], edge_shape[,2]),
-  mapVisualProperty('edge width', 'penwidth', 'passthrough'),
   mapVisualProperty('edge stroke unselected paint', 'interaction', 'discrete', edge_color[,1], edge_color[,2]),
   mapVisualProperty('edge label color', 'colour', 'discrete', edge_labelcolor[,1], edge_labelcolor[,2]),
-  mapVisualProperty('edge width', 'penwidth', 'passthrough'),
+#  mapVisualProperty('edge width', 'penwidth', 'passthrough'),
   mapVisualProperty('edge line type', 'type', 'discrete', edge_type[,1], edge_type[,2])
 ))
 setVisualStyle(style.name)

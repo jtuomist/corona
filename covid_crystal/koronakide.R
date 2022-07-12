@@ -93,9 +93,9 @@ prepare_graph <- function(
 #if (!exists("formatted")) {
 #  objects.latest("Op_en3861", code_name = "formatted")
 #}
-if (!exists("chooseGr")) {
-  objects.latest("Op_en3861", code_name = "chooseGr")
-}
+#if (!exists("chooseGr")) {
+#  objects.latest("Op_en3861", code_name = "chooseGr")
+#}
 
 file_list_covid <- c(
   "are-tracking-apps-a-legitimate-and-proportional-means-to-fight-covid-19-36145.txt"                ,
